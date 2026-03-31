@@ -1,0 +1,36 @@
+[
+  {
+    "file": "memory_tests.c",
+    "arguments": [
+      "gcc",
+      "-c",
+      "memory_tests.c",
+      "-o",
+      "memory_tests.o",
+      "-Wall",
+      "-Wextra",
+      "-Wno-implicit-fallthrough",
+      "-std=gnu23",
+      "-fPIC"
+    ],
+    "directory": "/home/user/laby/akso/rstack",
+    "output": "memory_tests.o"
+  },
+  {
+    "file": "rstack.c",
+    "arguments": [
+      "gcc",
+      "-c",
+      "rstack.c",
+      "-o",
+      "rstack.o",
+      "-Wall",
+      "-Wextra",
+      "-Wno-implicit-fallthrough",
+      "-std=gnu23",
+      "-fPIC"
+    ],
+    "directory": "/home/user/laby/akso/rstack",
+    "output": "rstack.o"
+  }
+]
