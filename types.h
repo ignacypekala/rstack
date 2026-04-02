@@ -1,5 +1,5 @@
 /*
- * Defines shared datatypes like rstack, so that they 
+ * Defines shared datatypes like rstack, so that they
  * can be used in different files.
  */
 #ifndef RSTACK_TYPES
@@ -9,24 +9,17 @@
 
 typedef struct {
     rstack_t **array;
-    size_t size;
-    size_t capacity;
-    uint64_t references;
-} rstack_stack_t ;
-
-enum rstack_value_type {
-    STACK,
-    NUMBER
-};
+    size_t     size;
+    size_t     capacity;
+    uint64_t   references;
+} rstack_container_t;
 
 typedef struct rstack {
-    enum rstack_value_type type;
-    // Saves memory by storing a number and a stack in the same memory space
-    union stack_or_number {
-        uint64_t number;
-        rstack_stack_t* stack;
-    } body;
+    enum { STACK, NUMBER } type;
+    union {
+        uint64_t            number;
+        rstack_container_t *container;
+    } as;
 } rstack_t;
-
 
 #endif // RSTACK_TYPES
