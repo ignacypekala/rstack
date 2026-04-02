@@ -1,18 +1,22 @@
-// #include <stdlib.h>
+#include "array.h"
+#include "types.h"
 #include <inttypes.h>
 #include <stddef.h>
-
-typedef struct rstack rstack_t;
-
-typedef struct {
-    bool flag; // To pole mówi, czy pole value zawiera wynik.
-    uint64_t value; // W tym polu jest właściwy wynik.
-} result_t;
+#include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
 
 rstack_t* rstack_new()
 {
-    return nullptr;
+    rstack_t* rs = malloc(sizeof(rstack_t));
+    if (rs == nullptr) {
+        errno = ENOMEM;
+    }
+    rs->type = STACK;
+    struct rstack_stack* stack = (*rs).body.stack;
+    stack->arr = nullptr;
 }
+
 void rstack_delete(rstack_t* rs) { }
 int rstack_push_value(rstack_t* rs, uint64_t value)
 {
