@@ -9,7 +9,7 @@ LDFLAGS=-shared -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc \
 .PHONY: clean all
 all: librstack.so
 
-librstack.so: memory_tests.o rstack.o array.o
+librstack.so: memory_tests.o rstack.o array.o types.o
 	$(CC) $^ -o $@ $(LDFLAGS) 
 
 %.o: %.c %.h
