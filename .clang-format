@@ -1,0 +1,9 @@
+Language: C
+BasedOnStyle: Mozilla
+IndentWidth: 4
+AlignConsecutiveDeclarations: true
+PointerAlignment: Right
+BreakBeforeBraces: Attach 
+AlwaysBreakAfterReturnType: Automatic
+ReflowComments: Always
+DerivePointerAlignment: true
