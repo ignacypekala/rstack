@@ -1,6 +1,6 @@
 CC=gcc
 CGFLAGS=-std=gnu23
-# CFLAGS=-Wall -Wextra -Wno-implicit-fallthrough -std=gnu23 -fPIC
+CFLAGS=-Wall -Wextra -Wno-implicit-fallthrough -std=gnu23 -fPIC
 CLFAGS += -O2
 LDFLAGS=-shared -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc \
 -Wl,--wrap=reallocarray -Wl,--wrap=free -Wl,--wrap=strdup -Wl,--wrap=strndup
@@ -9,7 +9,7 @@ LDFLAGS=-shared -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc \
 .PHONY: clean all
 all: librstack.so
 
-librstack.so: memory_tests.o rstack.o array.o types.o
+librstack.so: memory_tests.o rstack.o rstack_container.o
 	$(CC) $^ -o $@ $(LDFLAGS) 
 
 %.o: %.c %.h
