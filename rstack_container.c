@@ -16,6 +16,8 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
     }
     container->size = 0;
     container->capacity = initial_capacity;
+    container->references = 1;
+    container->visited = false;
 
     container->array = malloc(sizeof(rstack_t *) * container->capacity);
     if (container->array == nullptr) {
@@ -24,7 +26,7 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
     return container;
 }
 
-// Pushes an rstack_t into the array of an rstack_container_t.
+// Pushes an rstack_t to the array of an rstack_container_t.
 // On insufficient space, reallocates the array with a capacity multiplied by
 // the ARRAY_GROWTH_FACTOR. Returns 0 on success, -1 in case of reallocation
 // failure (the original pointer is left intact).
