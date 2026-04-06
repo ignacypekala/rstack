@@ -6,22 +6,22 @@ LDFLAGS=-shared -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc \
 -Wl,--wrap=reallocarray -Wl,--wrap=free -Wl,--wrap=strdup -Wl,--wrap=strndup
 
 
-.PHONY: clean all
-all: librstack.so
+.PHONY: clean all test
+all: rstack_example
 
-librstack.so: memory_tests.o rstack.o rstack_container.o
+librstack.so: rstack.o memory_tests.o rstack_container.o
 	$(CC) $^ -o $@ $(LDFLAGS) 
 
 %.o: %.c %.h
 	$(CC) -c $< -o $@ $(CFLAGS)
  
-rstack_example: rstack_example.o memory_tests.o librstack.so
+rstack_example: rstack_example.o librstack.so
 	$(CC) -L . -l rstack $^ -o $@ -Wl,-rpath,'.'
 
 test: CFLAGS +=-g
 test: LDFLAGS +=-g
 test: rstack_example
-	valgrind --leak-check=full ./$< -s
+	valgrind --track-origins=yes --leak-check=full ./$< two
 	
 
 clean:

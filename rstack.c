@@ -10,8 +10,8 @@
 static const size_t INITIAL_ARRAY_SIZE = 10;
 
 /*
- * Creates a generic instance of rstack_t. Returns a pointer to the created
- * structure or nullptr on allocation failure.
+ * Creates a generic instance of rstack_t. 
+ * Returns a pointer to the created structure or nullptr on allocation failure.
  */
 static rstack_t *rstack_generic_new() {
     rstack_t *rs = malloc(sizeof(rstack_t));
@@ -64,29 +64,30 @@ rstack_t *rstack_new() {
  * * rs - pointer to the deleted structure
  * Doesn't do anything if nullptr was provided. 
  * The supplied pointer mustn't be used after deletion.
+ * TODO: Detect orphaned cycles
  */
 void rstack_delete(rstack_t *rs) {
     if (rs == nullptr) return;
 
     if (rs->type == CONTAINER) {
         rstack_container_t *container = rs->as.container;
-        container->references -= 1;
+        container->references--;
         // Upon deletion of this rstack_t, its descendants will lose a reference.
-        for (size_t i = 0; i < container->size; i++) {
-            rstack_delete(container->array[i]);
-        }
         if (container->references <= 0) {
+            for (size_t i = 0; i < container->size; i++) {
+                rstack_delete(container->array[i]);
+            }
             free(container->array);
             free(container);
             free(rs);
         }
-    } else { // rs->type == NUMBER
+    } else {
         free(rs);
     }
 }
 
 /*
- * Pushes a numerical value to an rstack.
+ * Pushes a numerical value onto an rstack.
  * * rs - pointer to an rstack
  * * value - pushed number
  * Returns 0 on success, -1 if rs == nullptr or an error occured
@@ -117,6 +118,7 @@ int rstack_push_value(rstack_t *rs, uint64_t value) {
  * Returns 0 on success, -1 if either rs1 == nullptr, rs2 == nullptr, or an
  * error occured when allocating memory. In case of failure errno is set to
  * EINVAL or ENOMEM, accordingly.
+ * Assumes both rs
  */
 int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
     if (rs1 == nullptr || rs2 == nullptr) {
@@ -127,6 +129,7 @@ int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
         errno = ENOMEM;
         return -1;
     }
+    rs2->as.container->references++;
     return 0;
 }
 
@@ -143,13 +146,15 @@ void rstack_pop(rstack_t *rs) {
 }
 
 /*
- * Recursively find the topmost numerical value of an rstack. In the process
- * raises the "visited" flag to detect cycles. Every usage should be followed by
- * rstack_front_cleaner(). Returns result_t in accordance to the specification
- * of rstack_front(), but assumes that rs != nullptr && rs->type == CONTAINER
+ * Recursively finds the topmost numerical value on an rstack. 
+ * * rs - pointer to an rstack 
+ * Returns a result_t structure, where: flag == true <==> value
+ * contains the found number flag == false <==> rs == nullptr, the rstack is
+ * empty or there is no such number.
+ * Assumes rs == nullptr || rs->type == CONTAINER
  */
-static result_t rstack_front_traverser(rstack_t *rs) {
-    result_t t;
+result_t rstack_front(rstack_t *rs) {
+    result_t t = {};
     if (rs == nullptr) {
         t.flag = false;
         return t;
@@ -162,7 +167,6 @@ static result_t rstack_front_traverser(rstack_t *rs) {
     } 
     container->visited = true;
 
-
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *substack = container->array[i];
         if (substack->type == NUMBER) {
@@ -170,43 +174,12 @@ static result_t rstack_front_traverser(rstack_t *rs) {
             t.value = substack->as.number;
             break;
         } else {
-            t = rstack_front_traverser(substack);
-            if (t.flag)
-                break;
+            t = rstack_front(substack);
+            if (t.flag) break;
         }
     }
 
-    return t;
-}
-
-/*
- * Resets "visited" flags after the rstack_front_traverser. 
- * Assumes rs->type == CONTAINER.
- */
-static void rstack_front_cleaner(rstack_t *rs) {
-    rstack_container_t *container = rs->as.container;
-    if (container->visited) {
-        container->visited = false;
-
-        for (size_t i = 0; i < container->size; i++) {
-            rstack_t *substack = container->array[i];
-            if (substack->type == CONTAINER) {
-                rstack_front_cleaner(substack);
-            }
-        }
-    }
-}
-
-/*
- * Recursively finds the topmost numerical value on an rstack. 
- * * rs - pointer to an rstack 
- * Returns a result_t structure, where: flag == true <==> value
- * contains the found number flag == false <==> rs == nullptr, the rstack is
- * empty or there is no such number.
- */
-result_t rstack_front(rstack_t *rs) {
-    result_t t = rstack_front_traverser(rs);
-    rstack_front_cleaner(rs);
+    container->visited = false;
     return t;
 }
 
