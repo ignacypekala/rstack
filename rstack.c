@@ -9,16 +9,20 @@
 
 static const size_t INITIAL_ARRAY_SIZE = 10;
 
-// Creates a generic instance of rstack_t.
-// Returns a pointer to the created structure or nullptr on allocation failure.
+/*
+ * Creates a generic instance of rstack_t. Returns a pointer to the created
+ * structure or nullptr on allocation failure.
+ */
 static rstack_t *rstack_generic_new() {
     rstack_t *rs = malloc(sizeof(rstack_t));
     if (rs == nullptr) return nullptr;
     return rs;
 }
 
-// Creates a new rstack_t object with type == NUMBER.
-// Returns a pointer to the created structure or nullptr on allocation failure.
+/*
+ * Creates a new rstack_t object with type == NUMBER.
+ * Returns a pointer to the created structure or nullptr on allocation failure.
+ */
 static rstack_t *rstack_number_new(uint64_t number) {
     rstack_t *rs = rstack_generic_new();
     if (rs == nullptr) return nullptr;
@@ -27,13 +31,14 @@ static rstack_t *rstack_number_new(uint64_t number) {
     return rs;
 }
 
-// Creates a new rstack_t object with type == CONTIANER. The container is
-// created too. Returns a pointer to the created structure or nullptr on
-// failure.
+/*
+ * Creates a new rstack_t object with type == CONTAINER. The container is
+ * created too. Returns a pointer to the created structure or nullptr on
+ * failure.
+ */
 static rstack_t *rstack_container_new() {
     rstack_t *rs = rstack_generic_new();
-    if (rs == nullptr)
-        return nullptr;
+    if (rs == nullptr) return nullptr;
     rs->type = CONTAINER;
 
     rs->as.container = init_rstack_container(INITIAL_ARRAY_SIZE);
@@ -43,19 +48,23 @@ static rstack_t *rstack_container_new() {
     return rs;
 }
 
-// Creates a new rstack_t with type == CONTAINER.
-// Returns a pointer to the created structure or nullptr in the case of
-// allocation failure (errno is set to ENOMEM).
+/*
+ * Creates a new rstack_t with type == CONTAINER.
+ * Returns a pointer to the created structure or nullptr in the case of
+ * allocation failure (errno is set to ENOMEM).
+ */
 rstack_t *rstack_new() {
     rstack_t *rs = rstack_container_new();
     if (rs == nullptr) errno = ENOMEM;
     return rs;
 }
 
-// Deletes an rstack.
-// - rs - pointer to the deleted structure
-// Doesn't do anything if nullptr was provided.
-// After deletion the rstack pointer must not be used.
+/*
+ * Deletes an rstack.
+ * * rs - pointer to the deleted structure
+ * Doesn't do anything if nullptr was provided. 
+ * The supplied pointer mustn't be used after deletion.
+ */
 void rstack_delete(rstack_t *rs) {
     if (rs == nullptr) return;
 
@@ -76,12 +85,14 @@ void rstack_delete(rstack_t *rs) {
     }
 }
 
-// Pushes a numerical value to an rstack.
-// - rs - pointer to an rstack
-// value - pushed number
-// Returns 0 on success, -1 if rs == nullptr or an error occured when
-// allocating memory. In case of failure errno is set accordingly to EINVAL or
-// ENOMEM. Assumes rs == nullptr || rs->type == CONTAINER
+/*
+ * Pushes a numerical value to an rstack.
+ * * rs - pointer to an rstack
+ * * value - pushed number
+ * Returns 0 on success, -1 if rs == nullptr or an error occured
+ * when allocating memory. In case of failure errno is set accordingly to EINVAL
+ * or ENOMEM. Assumes rs == nullptr || rs->type == CONTAINER
+ */
 int rstack_push_value(rstack_t *rs, uint64_t value) {
     if (rs == nullptr) {
         errno = EINVAL;
@@ -99,12 +110,14 @@ int rstack_push_value(rstack_t *rs, uint64_t value) {
     return 0;
 }
 
-// Pushes an rstack onto an rstack.
-// - rs1 - pointer to the rstack onto which an rstack will be pushed
-// - rs2 - pointer to the pushed rstack
-// Returns 0 on success, -1 if either rs1 == nullptr, rs2 == nullptr, or 
-// an error occured when allocating memory.
-// In case of failure errno is set to EINVAL or ENOMEM, accordingly.
+/*
+ * Pushes an rstack onto an rstack.
+ * * rs1 - pointer to the rstack onto which an rstack will be pushed
+ * * rs2 - pointer to the pushed rstack
+ * Returns 0 on success, -1 if either rs1 == nullptr, rs2 == nullptr, or an
+ * error occured when allocating memory. In case of failure errno is set to
+ * EINVAL or ENOMEM, accordingly.
+ */
 int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
     if (rs1 == nullptr || rs2 == nullptr) {
         errno = EINVAL;
@@ -117,61 +130,115 @@ int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
     return 0;
 }
 
-// Non-recursively pops the top element of an rstack.
-// - rs - pointer to an rstack
-// If rs == nullptr or the rstack is empty, doesn't do anything.
+/*
+ * Non-recursively pops the top element of an rstack. 
+ * * rs - pointer to an rstack 
+ * If rs == nullptr or the rstack is empty, doesn't do anything.
+ */
 void rstack_pop(rstack_t *rs) {
     rstack_container_t *container = rs->as.container;
-    if (container->size <= 0) return;
+    if (container->size <= 0)
+        return;
     rstack_delete(container->array[--container->size]);
 }
 
-// Recursively checks whether an rstack contains a number.
-// - rs - pointer to an rstack
-// Returns true if rs == nullptr or rstack doesn't contain a number.
-// false - if the rstack contains a number
-// Assumes rs->type == CONTAINER
-bool rstack_empty(rstack_t *rs) {
-    rstack_container_t *container = rs->as.container;
-    for (size_t i = 0; i < container->size; i++) {
-        rstack_t *element = container->array[i];
-        if (element->type == NUMBER) {
-            return true;
-        } else { // element->type == CONTAINER
-            bool found = rstack_empty(element);
-            if (found) {
-                return true;
-            }
-            // TODO: Figure out what to do to handle cycles
-        };
+/*
+ * Recursively find the topmost numerical value of an rstack. In the process
+ * raises the "visited" flag to detect cycles. Every usage should be followed by
+ * rstack_front_cleaner(). Returns result_t in accordance to the specification
+ * of rstack_front(), but assumes that rs != nullptr && rs->type == CONTAINER
+ */
+static result_t rstack_front_traverser(rstack_t *rs) {
+    result_t t;
+    if (rs == nullptr) {
+        t.flag = false;
+        return t;
     }
-    return false;
-}
 
-// Recursively finds the topmost numerical value on an rstack.
-// - rs - pointer to an rstack
-// Returns a result_t structure, where:
-//  flag == true <==> value contains the found number
-//  flag == false <==> rs == nullptr, the rstack is empty
-//  or there is no such number.
-result_t rstack_front(rstack_t *rs) {
-    result_t t = {};
+    rstack_container_t *container = rs->as.container;
+    if (container->visited) {
+        t.flag = false;
+        return t;
+    } 
+    container->visited = true;
+
+
+    for (size_t i = 0; i < container->size; i++) {
+        rstack_t *substack = container->array[i];
+        if (substack->type == NUMBER) {
+            t.flag = true;
+            t.value = substack->as.number;
+            break;
+        } else {
+            t = rstack_front_traverser(substack);
+            if (t.flag)
+                break;
+        }
+    }
+
     return t;
 }
 
-// Creates a new stack, with numbers found in a file.
-// - path - path to a file
-// Returns a pointer to an rstack or nullptr if path == nullptr or
-// an error occured.  In which case the appropriate errno is set. (define)
+/*
+ * Resets "visited" flags after the rstack_front_traverser. 
+ * Assumes rs->type == CONTAINER.
+ */
+static void rstack_front_cleaner(rstack_t *rs) {
+    rstack_container_t *container = rs->as.container;
+    if (container->visited) {
+        container->visited = false;
+
+        for (size_t i = 0; i < container->size; i++) {
+            rstack_t *substack = container->array[i];
+            if (substack->type == CONTAINER) {
+                rstack_front_cleaner(substack);
+            }
+        }
+    }
+}
+
+/*
+ * Recursively finds the topmost numerical value on an rstack. 
+ * * rs - pointer to an rstack 
+ * Returns a result_t structure, where: flag == true <==> value
+ * contains the found number flag == false <==> rs == nullptr, the rstack is
+ * empty or there is no such number.
+ */
+result_t rstack_front(rstack_t *rs) {
+    result_t t = rstack_front_traverser(rs);
+    rstack_front_cleaner(rs);
+    return t;
+}
+
+/*
+ * Recursively checks whether an rstack contains a number.
+ * * rs - pointer to an rstack
+ * Returns true if rs == nullptr or rstack doesn't contain a number.
+ * false - if the rstack contains a number
+ * Assumes rs->type == CONTAINER
+ */
+bool rstack_empty(rstack_t *rs) {
+    result_t t = rstack_front(rs);
+    return !t.flag;
+}
+
+/*
+ * Creates a new stack, with numbers found in a file.
+ * * path - path to a file
+ * Returns a pointer to an rstack or nullptr if path == nullptr or
+ * an error occured.  In which case the appropriate errno is set. (define)
+ */
 rstack_t *rstack_read(char const *path) {
     return nullptr;
 }
 
-// Writes the numbers from a stack to a file.
-// - path - name of a file
-// - rs - pointer to an rstack
-// Returns 0 on success, -1 if either path or rs is a nullptr, or an
-// error occured. In which case the appropriate errno is set. (define)
+/*
+ * Writes the numbers from a stack to a file.
+ * * path - name of a file
+ * * rs - pointer to an rstack
+ * Returns 0 on success, -1 if either path or rs is a nullptr, or an
+ * error occured. In which case the appropriate errno is set. (define) 
+ */
 int rstack_write(char const *path, rstack_t *rs) {
     return 0;
 }
