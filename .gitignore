@@ -2,3 +2,4 @@ compile-commands.json
 **/*.o
 **/*.so
 rstack_example
+a.out
