@@ -1,25 +1,8 @@
 [
   {
-    "file": "memory_tests.c",
-    "arguments": [
-      "gcc",
-      "-c",
-      "memory_tests.c",
-      "-o",
-      "memory_tests.o",
-      "-Wall",
-      "-Wextra",
-      "-Wno-implicit-fallthrough",
-      "-std=gnu23",
-      "-fPIC"
-    ],
-    "directory": "/home/user/laby/akso/rstack",
-    "output": "memory_tests.o"
-  },
-  {
     "file": "rstack.c",
     "arguments": [
-      "gcc",
+      "/usr/sbin/gcc",
       "-c",
       "rstack.c",
       "-o",
@@ -28,9 +11,64 @@
       "-Wextra",
       "-Wno-implicit-fallthrough",
       "-std=gnu23",
-      "-fPIC"
+      "-fPIC",
+      "-g"
     ],
     "directory": "/home/user/laby/akso/rstack",
     "output": "rstack.o"
+  },
+  {
+    "file": "memory_tests.c",
+    "arguments": [
+      "/usr/sbin/gcc",
+      "-c",
+      "memory_tests.c",
+      "-o",
+      "memory_tests.o",
+      "-Wall",
+      "-Wextra",
+      "-Wno-implicit-fallthrough",
+      "-std=gnu23",
+      "-fPIC",
+      "-g"
+    ],
+    "directory": "/home/user/laby/akso/rstack",
+    "output": "memory_tests.o"
+  },
+  {
+    "file": "rstack_container.c",
+    "arguments": [
+      "/usr/sbin/gcc",
+      "-c",
+      "rstack_container.c",
+      "-o",
+      "rstack_container.o",
+      "-Wall",
+      "-Wextra",
+      "-Wno-implicit-fallthrough",
+      "-std=gnu23",
+      "-fPIC",
+      "-g"
+    ],
+    "directory": "/home/user/laby/akso/rstack",
+    "output": "rstack_container.o"
+  },
+  {
+    "file": "rstack_example.c",
+    "arguments": [
+      "/usr/sbin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wno-implicit-fallthrough",
+      "-std=gnu23",
+      "-fPIC",
+      "-g",
+      "-c",
+      "-o",
+      "rstack_example.o",
+      "rstack_example.c"
+    ],
+    "directory": "/home/user/laby/akso/rstack",
+    "output": "rstack_example.o"
   }
 ]
