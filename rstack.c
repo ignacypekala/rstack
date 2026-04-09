@@ -138,6 +138,7 @@ int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
  * Non-recursively pops the top element of an rstack. 
  * * rs - pointer to an rstack 
  * If rs == nullptr or the rstack is empty, doesn't do anything.
+ * Assumes rs->type == CONTAINER
  */
 void rstack_pop(rstack_t *rs) {
     rstack_container_t *container = rs->as.container;
@@ -169,7 +170,7 @@ result_t rstack_front(rstack_t *rs) {
     container->visited = true;
 
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = container->array[i];
+        rstack_t *substack = container->array[container->size - i - 1];
         if (substack->type == NUMBER) {
             t.flag = true;
             t.value = substack->as.number;
