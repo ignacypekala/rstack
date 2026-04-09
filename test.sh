@@ -16,12 +16,17 @@ function warn() {
 
 name=$1
 
-make test_$name
+make test_$name -s
 
 if [[ $2 == no ]]; then
     cmd=( ./test_$name )
 else
-    cmd=(./valgrind.sh test_$name )
+    cmd=( 
+        valgrind 
+        --track-origins=yes --leak-check=full 
+        -q
+        ./test_$name
+    )
 fi
 
 if [[ $2 != "" ]]; then
@@ -30,28 +35,25 @@ if [[ $2 != "" ]]; then
     output_file=${input_file%.in}.out
 fi
 
-echo ${cmd[@]}
+# echo ${cmd[@]}
 "${cmd[@]}" > test.out
 
 code=$?
-if [[ $code == 0 || $code == 3 ]]; then
-
+if [[ $code == 0 ]]; then
     if [[ -v output_file ]] && !diff -q $output_file test.out > /dev/null; then
         fail The outputs differ:
         diff -u --color $output_file test.out 
-        echo
         exit 2
     else
-        if [[ $code == 3 ]]; then
-            warn "Valgrind reported errors in $name"
-            exit 3
-        fi
+        # if [[ $code == 3 ]]; then
+        #     warn "Valgrind reported errors in $name"
+        #     exit 3
+        # fi
         success $name
         exit 0
     fi
 else
     fail Exited with code $code
-    echo
     exit 1
 fi
 

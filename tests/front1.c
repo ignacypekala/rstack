@@ -1,5 +1,6 @@
 #include "macros.h"
 #include <stdint.h>
+#include <stdio.h>
 #include "../rstack.h"
 
 int main() {
@@ -13,7 +14,7 @@ int main() {
         ASSERT_RESULT(front, true, values[5 - i - 1]);
         rstack_pop(stack);
     }
-    ASSERT_RESULT(rstack_front(stack), false);
+    ASSERT_RESULT(rstack_front(stack), false, 0);
     rstack_delete(stack);
     return 0;
 }
