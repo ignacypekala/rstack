@@ -34,7 +34,7 @@ echo ${cmd[@]}
 "${cmd[@]}" > test.out
 
 code=$?
-if [[ $code == 0 || $code == 123 ]]; then
+if [[ $code == 0 || $code == 3 ]]; then
 
     if [[ -v output_file ]] && !diff -q $output_file test.out > /dev/null; then
         fail The outputs differ:
@@ -42,7 +42,7 @@ if [[ $code == 0 || $code == 123 ]]; then
         echo
         exit 2
     else
-        if [[ $code == 123 ]]; then
+        if [[ $code == 3 ]]; then
             warn "Valgrind reported errors in $name"
             exit 3
         fi
