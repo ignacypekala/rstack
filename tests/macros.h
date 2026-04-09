@@ -22,7 +22,7 @@
 #define ASSERT(f)                                                              \
     do {                                                                       \
         if (!(f)) {                                                            \
-            REPORT("Assertion failed");                                        \
+            REPORT("Assertion failed.");                                       \
             return FAIL;                                                       \
         }                                                                      \
     } while (0)
@@ -31,21 +31,23 @@
     do {                                                                       \
         result_t r = c;                                                        \
         if (r.flag != (f)) {                                                   \
-            REPORT("Result assertion failed, expected flag == %s",             \
+            REPORT("Result assertion failed, expected flag == %s.",            \
                    f ? "true" : "false");                                      \
             return FAIL;                                                       \
         }                                                                      \
         if ((f) && r.value != __VA_ARGS__ - 0) {                               \
-            REPORT("Result assertion failed, expected value == %" PRIu64,      \
-                   (uint64_t) __VA_ARGS__);                                     \
+            REPORT("Result assertion failed, expected value == %" PRIu64 ".",  \
+                   (uint64_t)__VA_ARGS__);                                     \
             return FAIL;                                                       \
         }                                                                      \
     } while (0)
 
 #define CHECK_IF_NO_ERROR(f)                                                   \
     do {                                                                       \
-        if ((f) != 0)                                                          \
+        if ((f) != 0) {                                                        \
+            REPORT("An error occured.");                                       \
             return FAIL;                                                       \
+        }                                                                      \
     } while (0)
 
 #define PRINT_U64(v) printf("%" PRIu64 "\n", v);
