@@ -1,10 +1,11 @@
 #include "rstack.h"
 #include "rstack_container.h"
 #include "types.h"
+#include <ctype.h>
 #include <errno.h>
-#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static const size_t INITIAL_ARRAY_SIZE = 10;
@@ -199,10 +200,58 @@ bool rstack_empty(rstack_t *rs) {
  * Creates a new stack, with numbers found in a file.
  * * path - path to a file
  * Returns a pointer to an rstack or nullptr if path == nullptr or
- * an error occured.  In which case the appropriate errno is set. (define)
+ * an error occured.
+ * Possible errno values:
+ * * EINVAL - invalid path
+ * * EBADMSG - invalid data in the provided file
+ * * 
  */
 rstack_t *rstack_read(char const *path) {
-    return nullptr;
+    if (path == nullptr) {
+        errno = EINVAL;
+        return nullptr;
+    }
+    // According to POSIX fopen sets errno on failure.
+    // Therefore it may be set to one of the following:
+    // EACCES, EINTR, EISDIR, ELOOP, EMFILE, EMFILE, ENAMETOOLONG, ENOENT,
+    // ENOENT/ENOTDIR, ENOSPC, ENOTDIR, ENXIO, EOVERFLOW, EROFS, EINVAL, ELOOP,
+    // EMFILE, ENAMETOOLONG, ENOMEM, ETXTBSY.
+    // For more details refer to:
+    // https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
+    FILE *file = fopen(path, "r");
+    if (file == nullptr) return nullptr;
+
+    rstack_t *stack = rstack_new();
+
+    // fscanf ignores leading whitespace (as categorized by isspace).
+    char buffer[21]; // 20 chars for the maximum value of uint64_t + 1 for '\0'
+    while (fscanf(file, "%20s", buffer) == 1) {
+        // fscanf will return early if the string is longer than 20 characters.
+        if (!feof(file)) {
+            char trailing_char = fgetc(file);
+            if (!isspace(trailing_char)) {
+                errno = EBADMSG;
+                rstack_delete(stack);
+                return nullptr;
+            } else
+                ungetc(trailing_char, file);
+        }
+
+        char *end_ptr = nullptr;
+        errno = 0;
+        uint64_t number = (uint64_t) strtoull(buffer, &end_ptr, 10);
+        if (errno == ERANGE) {
+            rstack_delete(stack);
+            return nullptr;
+        }
+
+        if (rstack_push_value(stack, number) != 0) {
+            rstack_delete(stack);
+            return nullptr;
+        };
+    }
+    fclose(file);
+    return stack;
 }
 
 /*
