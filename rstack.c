@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+static const int UINT64_MAX_STRING_LENGTH = 20;
+static const char* UINT64_STRING_FORMAT = "%20s";
 static const size_t INITIAL_ARRAY_SIZE = 10;
 
 /*
@@ -34,8 +36,9 @@ static rstack_t *rstack_number_new(uint64_t number) {
 }
 
 /*
- * Creates an rstack object of type CONTAINER and initializes its internal storage.
- * Returns a pointer to the structure, or nullptr on allocation failure.
+ * Creates an rstack object of type CONTAINER and initializes its internal
+ * storage. Returns a pointer to the structure, or nullptr on allocation
+ * failure.
  */
 static rstack_t *rstack_container_new() {
     rstack_t *rs = rstack_generic_new();
@@ -88,7 +91,10 @@ void rstack_delete(rstack_t *rs) {
 
 /*
  * Wraps a raw uint64_t in an rstack object and pushes it onto the stack.
- * Returns 0 on success, -1 on error (sets errno to EINVAL or ENOMEM).
+ * Returns 0 on success, -1 on error.
+ * Possible errno values:
+ * - EINVAL: rs is nullptr.
+ * - ENOMEM: Memory allocation failed for the new element or container growth.
  */
 int rstack_push_value(rstack_t *rs, uint64_t value) {
     if (rs == nullptr) {
@@ -110,7 +116,10 @@ int rstack_push_value(rstack_t *rs, uint64_t value) {
 
 /*
  * Pushes one rstack onto another and increments the reference count of the child.
- * Returns 0 on success, -1 on error (sets errno to EINVAL or ENOMEM).
+ * Returns 0 on success, -1 on error.
+ * Possible errno values:
+ * - EINVAL: rs1 or rs2 is nullptr.
+ * - ENOMEM: Memory allocation failed for container growth.
  */
 int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
     if (rs1 == nullptr || rs2 == nullptr) {
@@ -148,7 +157,6 @@ result_t rstack_front(rstack_t *rs) {
 
     rstack_container_t *container = rs->as.container;
     if (container->visited) return t;
-    
     container->visited = true;
 
     for (size_t i = 0; i < container->size; i++) {
@@ -178,7 +186,17 @@ bool rstack_empty(rstack_t *rs) {
 
 /*
  * Reads numerical values from a whitespace-separated text file and
- * populates a new rstack. Sets errno on failure (EINVAL, EBADMSG, or ERANGE).
+ * populates a new rstack.
+ * Returns a pointer to the rstack, or nullptr on failure.
+ * Possible errno values:
+ *  - EINVAL: path is nullptr.
+ *  - EBADMSG: File contains non-whitespace trailing characters or invalid
+ *    formatting.
+ *  - ERANGE: A value in the file exceeds the range of uint64_t.
+ *  - ENOMEM: Memory allocation failed.
+ *  And
+ *  https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
+ *  https://pubs.opengroup.org/onlinepubs/9699919799/functions/strtoul.html
  */
 rstack_t *rstack_read(char const *path) {
     if (path == nullptr) {
@@ -191,14 +209,16 @@ rstack_t *rstack_read(char const *path) {
 
     rstack_t *stack = rstack_new();
 
-    char buffer[21]; 
-    while (fscanf(file, "%20s", buffer) == 1) {
+    // Fscanf additionally writes \0 to the buffer (hence the size discrepancy).
+    char buffer[UINT64_MAX_STRING_LENGTH + 1];
+    while (fscanf(file, UINT64_STRING_FORMAT, buffer) == 1) {
+        // Sequences longer than 20 digits fall out of range of uint64_t.
         if (!feof(file)) {
             char trailing_char = fgetc(file);
             if (!isspace(trailing_char)) {
-                errno = EBADMSG;
                 rstack_delete(stack);
                 fclose(file);
+                errno = EBADMSG;
                 return nullptr;
             } else {
                 ungetc(trailing_char, file);
@@ -227,6 +247,8 @@ rstack_t *rstack_read(char const *path) {
 /*
  * Recursive helper for writing stack contents to a file.
  * Returns 1 if a cycle is detected, 0 on success, or -1 on write error.
+ * On write error, errno is set via fprintf:
+ * https://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html
  */
 int rstack_write_helper(FILE *file, rstack_t *rs) {
     if (rs == nullptr) return 0;
@@ -257,7 +279,11 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
 
 /*
  * Writes all numerical values in the rstack to a file, one per line.
- * Returns 0 on success, -1 on error (sets errno to EINVAL or file errors).
+ * Returns 0 on success, -1 on error.
+ * Possible errno values:
+ * - EINVAL: path or rs is nullptr.
+ * - Any errno set by fopen: https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
+ * - Any errno set by fprintf: https://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html
  */
 int rstack_write(char const *path, rstack_t *rs) {
     if (path == nullptr || rs == nullptr) {
@@ -269,10 +295,10 @@ int rstack_write(char const *path, rstack_t *rs) {
     if (file == nullptr) return -1;
 
     int result = rstack_write_helper(file, rs);
-    if (result == -1) {
-        return -1;
-    }
+    // Fclose may overwrite errno.
+    int temp_errno = errno;
     fclose(file);
+    errno = temp_errno;
     
     return (result == -1) ? -1 : 0;
 }
