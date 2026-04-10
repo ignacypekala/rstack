@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 static const size_t INITIAL_ARRAY_SIZE = 10;
 
@@ -256,12 +257,52 @@ rstack_t *rstack_read(char const *path) {
 }
 
 /*
- * Writes the numbers from a stack to a file.
+ * Writes the numbers from an rstack to the given file descriptor complying with
+ * the specification of rstack_write.
+ * Returns:
+ *  * 1 if a cycle was detected
+ *  * 0 if all the numbers were written successfully
+ *  * -1 if an error occured when writing
+ */
+int rstack_write_helper(FILE *file, rstack_t *rs) {
+    if (rs == nullptr) {
+        return 0;
+    }
+
+    rstack_container_t *container = rs->as.container;
+    if (container->visited) {
+        return 1;
+    }
+    container->visited = true;
+
+    for (size_t i = 0; i < container->size; i++) {
+        rstack_t *substack = container->array[container->size - i - 1];
+        if (substack->type == NUMBER) {
+            fprintf(file, "%" PRIu64 "\n", substack->as.number);
+        }
+    }
+
+    container->visited = false;
+    return 0;
+}
+/*
+ * Writes the numbers from an rstack to a file.
  * * path - name of a file
  * * rs - pointer to an rstack
  * Returns 0 on success, -1 if either path or rs is a nullptr, or an
  * error occured. In which case the appropriate errno is set. (define) 
  */
 int rstack_write(char const *path, rstack_t *rs) {
+    if (path == nullptr || rs == nullptr) {
+        errno = EINVAL;
+        return -1;
+    }
+    // fopen sets the appropriate errno on failure
+    // For more detail refer to the comment in rstack_read
+    FILE *file = fopen(path, "w");
+    if (file == nullptr) return -1;
+
+    rstack_write_helper(file, rs);
     return 0;
+
 }
