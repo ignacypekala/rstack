@@ -275,15 +275,20 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
     }
     container->visited = true;
 
+    int return_code = 0;
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *substack = container->array[container->size - i - 1];
         if (substack->type == NUMBER) {
             fprintf(file, "%" PRIu64 "\n", substack->as.number);
+        } else {
+            int code = rstack_write_helper(file, substack);
+            return_code = code;
+            if (code != 0) break;
         }
     }
 
     container->visited = false;
-    return 0;
+    return return_code;
 }
 /*
  * Writes the numbers from an rstack to a file.
@@ -301,8 +306,8 @@ int rstack_write(char const *path, rstack_t *rs) {
     // For more detail refer to the comment in rstack_read
     FILE *file = fopen(path, "w");
     if (file == nullptr) return -1;
-
     rstack_write_helper(file, rs);
+    fclose(file);
     return 0;
 
 }

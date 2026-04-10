@@ -6,23 +6,23 @@
 
 #define PASS 0
 #define FAIL 1
-#define WRONG_TEST 2
 #define VALGRIND_ERROR 3
+
+#define OUTPUT_FILE "test.fout"
 
 #define REPORT(...)                                                            \
     do {                                                                       \
-        fprintf(stderr, "%s:%d: ", __FILE__, __LINE__);                        \
+        fprintf(stderr, "%s (%s:%d): ", __func__, __FILE__, __LINE__);         \
         fprintf(stderr, __VA_ARGS__);                                          \
         fprintf(stderr, "\n");                                                 \
     } while (0)
 
-// Oblicza liczbę elementów tablicy x.
 #define SIZE(x) (sizeof x / sizeof x[0])
 
 #define ASSERT(f)                                                              \
     do {                                                                       \
         if (!(f)) {                                                            \
-            REPORT("Assertion failed.");                                       \
+            REPORT("Assertion failed: (%s)", #f);                              \
             return FAIL;                                                       \
         }                                                                      \
     } while (0)
@@ -42,7 +42,7 @@
         }                                                                      \
     } while (0)
 
-#define CHECK_IF_NO_ERROR(f)                                                   \
+#define NO_ERROR(f)                                                   \
     do {                                                                       \
         if ((f) != 0) {                                                        \
             REPORT("An error occured.");                                       \

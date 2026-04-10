@@ -1,0 +1,29 @@
+#include "macros.h"
+#include "../rstack.h"
+#include <assert.h>
+#include <inttypes.h>
+
+int main() {
+    rstack_t *A = rstack_new();
+    ASSERT(A);
+    rstack_t *B = rstack_new();
+    ASSERT(B);
+
+    NO_ERROR(rstack_push_value(A, 1));
+    NO_ERROR(rstack_push_value(B, 2));
+    NO_ERROR(rstack_push_rstack(A, B));
+    NO_ERROR(rstack_push_rstack(B, A));
+    NO_ERROR(rstack_push_value(A, 3));
+    NO_ERROR(rstack_push_value(B, 4));
+    
+    NO_ERROR(rstack_write("write2.out", A));
+    rstack_t *C = rstack_read("write2.out");
+
+    ASSERT_RESULT(rstack_front(C), true, 4); rstack_pop(C);
+    ASSERT_RESULT(rstack_front(C), true, 3); rstack_pop(C);
+    ASSERT_RESULT(rstack_front(C), false, 0);
+
+    rstack_delete(A);
+    rstack_delete(B);
+    rstack_delete(C);
+}

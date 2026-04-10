@@ -7,7 +7,7 @@ int main() {
     rstack_t *stack = rstack_new();
     uint64_t values[5] = {1, INT64_MAX, INT64_MIN, 2, 3};
     for (int i = 0; i < 5; i++) {
-        CHECK_IF_NO_ERROR(rstack_push_value(stack, values[i]));
+        NO_ERROR(rstack_push_value(stack, values[i]));
     }
     for (int i = 0; i < 5; i++) {
         result_t front = rstack_front(stack);

@@ -11,7 +11,7 @@ int main() {
     ASSERT(B);
     ASSERT(rstack_empty(B) == true);
 
-    CHECK_IF_NO_ERROR(rstack_push_value(A, 42));
+    NO_ERROR(rstack_push_value(A, 42));
     ASSERT(rstack_empty(A) == false);
 
     rstack_pop(A);

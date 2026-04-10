@@ -1,4 +1,4 @@
-// #include "macros.h"
+#include "macros.h"
 #include "../rstack.h"
 #include <assert.h>
 #include <stdio.h>
@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     rstack_t *stack = rstack_read(argv[1]);
-    assert(stack != nullptr);
+    ASSERT(stack != nullptr);
     while (!rstack_empty(stack)) {
         result_t front = rstack_front(stack);
         printf("%" PRIu64 "\n", front.value);

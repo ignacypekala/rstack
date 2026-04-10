@@ -11,14 +11,14 @@ int main() {
 
     ASSERT_RESULT(rstack_front(A), false, 0);
 
-    CHECK_IF_NO_ERROR(rstack_push_value(A, 1));
+    NO_ERROR(rstack_push_value(A, 1));
     ASSERT_RESULT(rstack_front(A), true, 1);
 
-    CHECK_IF_NO_ERROR(rstack_push_value(A, 2));
+    NO_ERROR(rstack_push_value(A, 2));
     ASSERT_RESULT(rstack_front(A), true, 2);
 
-    CHECK_IF_NO_ERROR(rstack_push_rstack(A, B));
-    CHECK_IF_NO_ERROR(rstack_push_rstack(A, B));
+    NO_ERROR(rstack_push_rstack(A, B));
+    NO_ERROR(rstack_push_rstack(A, B));
 
     ASSERT_RESULT(rstack_front(A), true, 2);
 
