@@ -11,11 +11,16 @@
 BG_RED_BLACK='\e[1;38;5;0;48;5;1m'
 BG_GREEN_BLACK='\e[1;38;5;0;48;5;2m'
 BG_YELLOW_BLACK='\e[1;38;5;0;48;5;3m'
-BOLD='\e[1;97m'
+BOLD_WHITE='\e[1;97m'
+WHITE='\e[97m'
 RESET='\e[0m'
 
 name=$1
-TEST_NAME="${BOLD}${name}:${RESET}"
+if [[ -v 2 ]]; then
+    TEST_NAME="${BOLD_WHITE}${name} ${WHITE}(${2}):${RESET}"
+else
+    TEST_NAME="${BOLD_WHITE}${name}:${RESET}"
+fi
 function pass() {
     echo -e "${BG_GREEN_BLACK} PASS ${RESET} ${TEST_NAME} $*"
 }

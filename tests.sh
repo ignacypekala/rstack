@@ -27,23 +27,23 @@ for test in ./tests/*.c; do
     cmd=( ./test.sh $test_name )
 
     shopt -s nullglob # makes * return nothing when there aren't any matches
-    input_files=( ./tests/$test_name/*.in )
+    input_files=( ./tests/$test_name/*.args )
     shopt -u nullglob 
 
-if [[ ${#input_files} > 0 ]]; then
-    for input_file in ./tests/$test_name/*.in; do
-        input_file_name=${input_file#./tests/$test_name/}
-        input_name=${input_file_name%.in}
+    if [[ ${#input_files} > 0 ]]; then
+        for input_file in ${input_files[@]}; do
+            input_file_name=${input_file#./tests/$test_name/}
+            input_name=${input_file_name%.args}
 
-        ${cmd[@]} "$input_name"
+            ${cmd[@]} "$input_name"
+            count $?
+            echo
+        done
+    else
+        "${cmd[@]}"
         count $?
         echo
-    done
-else
-    "${cmd[@]}"
-    count $?
-    echo
-fi
+    fi
 
 done
 
