@@ -39,7 +39,7 @@ int validate(char *path) {
 }
 
 int main() {
-    char *path = "write1.out";
+    char *path = OUTPUT_FILE;
     remove(path);
 
     NO_ERROR(write(path));

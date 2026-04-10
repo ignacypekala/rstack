@@ -16,8 +16,8 @@ int main() {
     NO_ERROR(rstack_push_value(A, 3));
     NO_ERROR(rstack_push_value(B, 4));
     
-    NO_ERROR(rstack_write("write2.out", A));
-    rstack_t *C = rstack_read("write2.out");
+    NO_ERROR(rstack_write(OUTPUT_FILE, A));
+    rstack_t *C = rstack_read(OUTPUT_FILE);
 
     ASSERT_RESULT(rstack_front(C), true, 4); rstack_pop(C);
     ASSERT_RESULT(rstack_front(C), true, 3); rstack_pop(C);
