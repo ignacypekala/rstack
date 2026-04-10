@@ -41,6 +41,5 @@ int rstack_container_push(rstack_container_t *container, rstack_t *rs) {
         container->array = new_pointer;
     }
     container->array[container->size++] = rs;
-    container->references++;
     return 0;
 }
