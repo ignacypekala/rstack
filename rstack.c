@@ -12,8 +12,8 @@
 static const size_t INITIAL_ARRAY_SIZE = 10;
 
 /*
- * Creates a generic instance of rstack_t. 
- * Returns a pointer to the created structure or nullptr on allocation failure.
+ * Internal helper to allocate a generic rstack structure.
+ * Returns a pointer to the new structure, or nullptr on allocation failure.
  */
 static rstack_t *rstack_generic_new() {
     rstack_t *rs = malloc(sizeof(rstack_t));
@@ -22,8 +22,8 @@ static rstack_t *rstack_generic_new() {
 }
 
 /*
- * Creates a new rstack_t object with type == NUMBER.
- * Returns a pointer to the created structure or nullptr on allocation failure.
+ * Creates an rstack object of type NUMBER.
+ * Returns a pointer to the structure, or nullptr on allocation failure.
  */
 static rstack_t *rstack_number_new(uint64_t number) {
     rstack_t *rs = rstack_generic_new();
@@ -34,9 +34,8 @@ static rstack_t *rstack_number_new(uint64_t number) {
 }
 
 /*
- * Creates a new rstack_t object with type == CONTAINER. The container is
- * created too. Returns a pointer to the created structure or nullptr on
- * failure.
+ * Creates an rstack object of type CONTAINER and initializes its internal storage.
+ * Returns a pointer to the structure, or nullptr on allocation failure.
  */
 static rstack_t *rstack_container_new() {
     rstack_t *rs = rstack_generic_new();
@@ -44,16 +43,17 @@ static rstack_t *rstack_container_new() {
     rs->type = CONTAINER;
 
     rs->as.container = init_rstack_container(INITIAL_ARRAY_SIZE);
-    if (rs->as.container == nullptr)
+    if (rs->as.container == nullptr) {
         free(rs);
+        return nullptr;
+    }
 
     return rs;
 }
 
 /*
- * Creates a new rstack_t with type == CONTAINER.
- * Returns a pointer to the created structure or nullptr in the case of
- * allocation failure (errno is set to ENOMEM).
+ * Public constructor for a new rstack.
+ * Sets errno to ENOMEM on failure.
  */
 rstack_t *rstack_new() {
     rstack_t *rs = rstack_container_new();
@@ -62,11 +62,9 @@ rstack_t *rstack_new() {
 }
 
 /*
- * Deletes an rstack.
- * * rs - pointer to the deleted structure
- * Doesn't do anything if nullptr was provided. 
- * The supplied pointer mustn't be used after deletion.
- * TODO: Detect orphaned cycles
+ * Deletes an rstack and its contents.
+ * For containers, it decrements the reference count and performs a recursive 
+ * deletion if the count reaches zero. Does nothing if rs is a nullptr.
  */
 void rstack_delete(rstack_t *rs) {
     if (rs == nullptr) return;
@@ -74,7 +72,7 @@ void rstack_delete(rstack_t *rs) {
     if (rs->type == CONTAINER) {
         rstack_container_t *container = rs->as.container;
         container->references--;
-        // Upon deletion of this rstack_t, its descendants will lose a reference.
+        
         if (container->references <= 0) {
             for (size_t i = 0; i < container->size; i++) {
                 rstack_delete(container->array[i]);
@@ -89,12 +87,8 @@ void rstack_delete(rstack_t *rs) {
 }
 
 /*
- * Pushes a numerical value onto an rstack.
- * * rs - pointer to an rstack
- * * value - pushed number
- * Returns 0 on success, -1 if rs == nullptr or an error occured
- * when allocating memory. In case of failure errno is set accordingly to EINVAL
- * or ENOMEM. Assumes rs == nullptr || rs->type == CONTAINER
+ * Wraps a raw uint64_t in an rstack object and pushes it onto the stack.
+ * Returns 0 on success, -1 on error (sets errno to EINVAL or ENOMEM).
  */
 int rstack_push_value(rstack_t *rs, uint64_t value) {
     if (rs == nullptr) {
@@ -107,6 +101,7 @@ int rstack_push_value(rstack_t *rs, uint64_t value) {
         return -1;
     }
     if (rstack_container_push(rs->as.container, number) == -1) {
+        rstack_delete(number);
         errno = ENOMEM;
         return -1;
     }
@@ -114,13 +109,8 @@ int rstack_push_value(rstack_t *rs, uint64_t value) {
 }
 
 /*
- * Pushes an rstack onto an rstack.
- * * rs1 - pointer to the rstack onto which an rstack will be pushed
- * * rs2 - pointer to the pushed rstack
- * Returns 0 on success, -1 if either rs1 == nullptr, rs2 == nullptr, or an
- * error occured when allocating memory. In case of failure errno is set to
- * EINVAL or ENOMEM, accordingly.
- * Assumes both rs
+ * Pushes one rstack onto another and increments the reference count of the child.
+ * Returns 0 on success, -1 on error (sets errno to EINVAL or ENOMEM).
  */
 int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
     if (rs1 == nullptr || rs2 == nullptr) {
@@ -136,12 +126,11 @@ int rstack_push_rstack(rstack_t *rs1, rstack_t *rs2) {
 }
 
 /*
- * Non-recursively pops the top element of an rstack. 
- * * rs - pointer to an rstack 
- * If rs == nullptr or the rstack is empty, doesn't do anything.
- * Assumes rs->type == CONTAINER
+ * Removes the top element from the rstack.
+ * Does nothing if the stack is a nullptr or empty.
  */
 void rstack_pop(rstack_t *rs) {
+    if (rs == nullptr) return;
     rstack_container_t *container = rs->as.container;
     if (container->size <= 0)
         return;
@@ -149,25 +138,17 @@ void rstack_pop(rstack_t *rs) {
 }
 
 /*
- * Recursively finds the topmost numerical value on an rstack. 
- * * rs - pointer to an rstack 
- * Returns a result_t structure, where: flag == true <==> value
- * contains the found number flag == false <==> rs == nullptr, the rstack is
- * empty or there is no such number.
- * Assumes rs == nullptr || rs->type == CONTAINER
+ * Recursively searches for the topmost numerical value in the stack.
+ * Uses a 'visited' flag to prevent infinite loops in cyclic structures.
+ * Returns a result_t with flag=true if a value is found.
  */
 result_t rstack_front(rstack_t *rs) {
-    result_t t = {};
-    if (rs == nullptr) {
-        t.flag = false;
-        return t;
-    }
+    result_t t = { .flag = false, .value = 0 };
+    if (rs == nullptr) return t;
 
     rstack_container_t *container = rs->as.container;
-    if (container->visited) {
-        t.flag = false;
-        return t;
-    } 
+    if (container->visited) return t;
+    
     container->visited = true;
 
     for (size_t i = 0; i < container->size; i++) {
@@ -187,11 +168,8 @@ result_t rstack_front(rstack_t *rs) {
 }
 
 /*
- * Recursively checks whether an rstack contains a number.
- * * rs - pointer to an rstack
- * Returns true if rs == nullptr or rstack doesn't contain a number.
- * false - if the rstack contains a number
- * Assumes rs->type == CONTAINER
+ * Checks if the stack contains any numerical values, searching recursively.
+ * Returns true if empty or nullptr, false if a number is found.
  */
 bool rstack_empty(rstack_t *rs) {
     result_t t = rstack_front(rs);
@@ -199,44 +177,32 @@ bool rstack_empty(rstack_t *rs) {
 }
 
 /*
- * Creates a new stack, with numbers found in a file.
- * * path - path to a file
- * Returns a pointer to an rstack or nullptr if path == nullptr or
- * an error occured.
- * Possible errno values:
- * * EINVAL - invalid path
- * * EBADMSG - invalid data in the provided file
- * * 
+ * Reads numerical values from a whitespace-separated text file and
+ * populates a new rstack. Sets errno on failure (EINVAL, EBADMSG, or ERANGE).
  */
 rstack_t *rstack_read(char const *path) {
     if (path == nullptr) {
         errno = EINVAL;
         return nullptr;
     }
-    // According to POSIX fopen sets errno on failure.
-    // Therefore it may be set to one of the following:
-    // EACCES, EINTR, EISDIR, ELOOP, EMFILE, EMFILE, ENAMETOOLONG, ENOENT,
-    // ENOENT/ENOTDIR, ENOSPC, ENOTDIR, ENXIO, EOVERFLOW, EROFS, EINVAL, ELOOP,
-    // EMFILE, ENAMETOOLONG, ENOMEM, ETXTBSY.
-    // For more details refer to:
-    // https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
+
     FILE *file = fopen(path, "r");
     if (file == nullptr) return nullptr;
 
     rstack_t *stack = rstack_new();
 
-    // fscanf ignores leading whitespace (as categorized by isspace).
-    char buffer[21]; // 20 chars for the maximum value of uint64_t + 1 for '\0'
+    char buffer[21]; 
     while (fscanf(file, "%20s", buffer) == 1) {
-        // fscanf will return early if the string is longer than 20 characters.
         if (!feof(file)) {
             char trailing_char = fgetc(file);
             if (!isspace(trailing_char)) {
                 errno = EBADMSG;
                 rstack_delete(stack);
+                fclose(file);
                 return nullptr;
-            } else
+            } else {
                 ungetc(trailing_char, file);
+            }
         }
 
         char *end_ptr = nullptr;
@@ -244,11 +210,13 @@ rstack_t *rstack_read(char const *path) {
         uint64_t number = (uint64_t) strtoull(buffer, &end_ptr, 10);
         if (errno == ERANGE) {
             rstack_delete(stack);
+            fclose(file);
             return nullptr;
         }
 
         if (rstack_push_value(stack, number) != 0) {
             rstack_delete(stack);
+            fclose(file);
             return nullptr;
         };
     }
@@ -257,29 +225,25 @@ rstack_t *rstack_read(char const *path) {
 }
 
 /*
- * Writes the numbers from an rstack to the given file descriptor complying with
- * the specification of rstack_write.
- * Returns:
- *  * 1 if a cycle was detected
- *  * 0 if all the numbers were written successfully
- *  * -1 if an error occured when writing
+ * Recursive helper for writing stack contents to a file.
+ * Returns 1 if a cycle is detected, 0 on success, or -1 on write error.
  */
 int rstack_write_helper(FILE *file, rstack_t *rs) {
-    if (rs == nullptr) {
-        return 0;
-    }
+    if (rs == nullptr) return 0;
 
     rstack_container_t *container = rs->as.container;
-    if (container->visited) {
-        return 1;
-    }
+    if (container->visited) return 1;
+    
     container->visited = true;
-
     int return_code = 0;
+
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *substack = container->array[container->size - i - 1];
         if (substack->type == NUMBER) {
-            fprintf(file, "%" PRIu64 "\n", substack->as.number);
+            if (fprintf(file, "%" PRIu64 "\n", substack->as.number) < 0) {
+                return_code = -1;
+                break;
+            }
         } else {
             int code = rstack_write_helper(file, substack);
             return_code = code;
@@ -290,24 +254,25 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
     container->visited = false;
     return return_code;
 }
+
 /*
- * Writes the numbers from an rstack to a file.
- * * path - name of a file
- * * rs - pointer to an rstack
- * Returns 0 on success, -1 if either path or rs is a nullptr, or an
- * error occured. In which case the appropriate errno is set. (define) 
+ * Writes all numerical values in the rstack to a file, one per line.
+ * Returns 0 on success, -1 on error (sets errno to EINVAL or file errors).
  */
 int rstack_write(char const *path, rstack_t *rs) {
     if (path == nullptr || rs == nullptr) {
         errno = EINVAL;
         return -1;
     }
-    // fopen sets the appropriate errno on failure
-    // For more detail refer to the comment in rstack_read
+
     FILE *file = fopen(path, "w");
     if (file == nullptr) return -1;
-    rstack_write_helper(file, rs);
-    fclose(file);
-    return 0;
 
+    int result = rstack_write_helper(file, rs);
+    if (result == -1) {
+        return -1;
+    }
+    fclose(file);
+    
+    return (result == -1) ? -1 : 0;
 }
