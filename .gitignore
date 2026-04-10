@@ -3,5 +3,7 @@ compile-commands.json
 **/*.so
 rstack_example
 a.out
-test.out
 test_*
+test.fout
+test.stdout
+test.valgrind

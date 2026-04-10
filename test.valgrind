@@ -1,8 +1,0 @@
-==11326== 184 (16 direct, 168 indirect) bytes in 1 blocks are definitely lost in loss record 6 of 6
-==11326==    at 0x484B7A8: malloc (vg_replace_malloc.c:446)
-==11326==    by 0x4863B3B: __wrap_malloc (memory_tests.c:69)
-==11326==    by 0x486333A: rstack_generic_new (rstack.c:19)
-==11326==    by 0x486339E: rstack_container_new (rstack.c:42)
-==11326==    by 0x48633FB: rstack_new (rstack.c:59)
-==11326==    by 0x40011A5: main (write3.c:10)
-==11326== 

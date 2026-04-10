@@ -28,4 +28,5 @@ test_%: test_%.o librstack.so
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 clean:
-	rm -f *.o a.out rstack_example librstack.so test.out test_* 
+	rm -f *.o a.out rstack_example librstack.so test_* test.fout test.stdout \
+	test.valgrind
