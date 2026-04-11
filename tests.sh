@@ -4,7 +4,8 @@ passes=0
 fails=0
 warnings=0
 misconfigured=0
-function count() {
+
+function register() {
     case $1 in
         0)
             ((passes++))
@@ -19,6 +20,7 @@ function count() {
             ((warnings++))
             ;;
     esac
+    echo
 }
 for test in ./tests/*.c; do
     test_name=${test#./tests/}
@@ -36,13 +38,11 @@ for test in ./tests/*.c; do
             input_name=${input_file_name%.args}
 
             ${cmd[@]} "$input_name"
-            count $?
-            echo
+            register $?
         done
     else
         "${cmd[@]}"
-        count $?
-        echo
+        register $?
     fi
 
 done

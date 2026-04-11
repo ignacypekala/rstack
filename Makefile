@@ -9,7 +9,7 @@ LDFLAGS += -g # REMOVE BEFORE SUBMISSION
 
 .PHONY: clean all
 .PRECIOUS: test_%.o
-all: rstack_example
+all: librstack.so
 
 librstack.so: rstack.o memory_tests.o rstack_container.o
 	$(CC) $^ -o $@ $(LDFLAGS) 
