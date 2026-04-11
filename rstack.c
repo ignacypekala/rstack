@@ -66,7 +66,7 @@ rstack_t *rstack_new() {
 
 /*
  * Deletes an rstack and its contents.
- * For containers, it decrements the reference count and performs a recursive 
+ * For containers, it decrements the reference count and performs a recursive
  * deletion if the count reaches zero. Does nothing if rs is a nullptr.
  */
 void rstack_delete(rstack_t *rs) {
@@ -260,7 +260,7 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
     int return_code = 0;
 
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = container->array[container->size - i - 1];
+        rstack_t *substack = container->array[i];
         if (substack->type == NUMBER) {
             if (fprintf(file, "%" PRIu64 "\n", substack->as.number) < 0) {
                 return_code = -1;

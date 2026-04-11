@@ -21,6 +21,7 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
 
     container->array = malloc(sizeof(rstack_t *) * container->capacity);
     if (container->array == nullptr) {
+        free(container);
         return nullptr;
     }
     return container;
