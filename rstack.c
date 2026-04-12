@@ -83,7 +83,9 @@ static void increment_or_decrement(rstack_t *stack, bool should_increment) {
 
 static int scan_and_rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
-    if (container->visited) return 0;
+    if (container->visited) {
+        return 0;
+    }
     container->visited = true;
     for (size_t i = 0; i < container->size; i++) {
        rstack_t *substack = container->array[i];
@@ -101,7 +103,8 @@ static int scan_and_rescue(rstack_t *stack) {
 
 static void collect(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
-    if (container->visited) return;
+    if (container->visited) 
+        return;
 
     if (container->references <= 0) {
         container->visited = true;
@@ -109,7 +112,7 @@ static void collect(rstack_t *stack) {
         for (size_t i = 0; i < container->size; i++) {
             rstack_t *substack = stack->as.container->array[i];
             if (substack->type == CONTAINER) {
-                substack->as.container->references--;
+                // substack->as.container->references--;
                 collect(substack);
             } else {
                 free(substack);
@@ -135,8 +138,15 @@ void rstack_delete(rstack_t *rs) {
         rstack_container_t *container = rs->as.container;
         if (--container->references <= 0) {
             for (size_t i = 0; i < container->size; i++) {
-                rstack_delete(container->array[i]);
+                rstack_t *substack = container->array[i];
+                rstack_delete(substack);
             }
+            // for (size_t i = 0; i < container->size; i++) {
+            //     rstack_t *substack = container->array[i];
+            //     if (substack->type == NUMBER) {
+            //         free(substack);
+            //     }
+            // }
             free(container->array);
             free(container);
             free(rs);
