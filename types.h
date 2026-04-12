@@ -8,12 +8,22 @@
 #include <inttypes.h>
 #include "rstack.h"
 
+// Rstack garbage collector state AKA the node color
+enum rstack_gc_state {
+    NORMAL, // (uncolored/black)
+    UNDER_TRIAL, // (gray)
+    RESCUED, // (black)
+    PROVISIONALLY_DEAD, // (white)
+    DEAD,
+};
+
 typedef struct {
-    rstack_t **array;
-    size_t     size;
-    size_t     capacity;
-    uint64_t   references;
-    bool       visited; // flag raised during traversal to detect cycles
+    rstack_t           **array;
+    size_t               size;
+    size_t               capacity;
+    uint64_t             references;
+    bool                 visited;
+    enum rstack_gc_state state;
 } rstack_container_t;
 
 enum rstack_type { 

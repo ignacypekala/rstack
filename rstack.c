@@ -66,62 +66,81 @@ rstack_t *rstack_new() {
 
 static void increment_or_decrement(rstack_t *stack, bool should_increment) {
     rstack_container_t *container = stack->as.container;
+    container->state = UNDER_TRIAL;
 
-    container->visited = true;
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *substack = container->array[i];
         if (substack->type == CONTAINER) {
             rstack_container_t *substack_container = substack->as.container;
             substack_container->references += should_increment ? +1 : -1;
-            if (!substack_container->visited) {
+            if (substack_container->state != UNDER_TRIAL) {
                 increment_or_decrement(substack, should_increment);
             }
         }
     }
-    container->visited = false;
 }
 
-static int scan_and_rescue(rstack_t *stack) {
+static void rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
-    if (container->visited) {
-        return 0;
-    }
-    container->visited = true;
+    container->state = RESCUED;
     for (size_t i = 0; i < container->size; i++) {
-       rstack_t *substack = container->array[i];
-       if (substack->type == CONTAINER) {
-           rstack_container_t *substack_container = substack->as.container;
-           if (container->references > 0) {
-               substack_container->references++;
-           }
-           scan_and_rescue(substack);
-       }
+        rstack_t *substack = container->array[i];
+        if (substack->type == CONTAINER) {
+            rstack_container_t *substack_container = substack->as.container;
+            substack_container->references++;
+            if (substack_container->state != RESCUED) {
+                rescue(substack);
+            }
+        }
     }
-    container->visited = false;
-    return 0;
+}
+static void scan(rstack_t *stack) {
+    rstack_container_t *container = stack->as.container;
+    if (container->state != UNDER_TRIAL) return;
+    if (container->references > 0) {
+        rescue(stack);
+    } else {
+        container->state = PROVISIONALLY_DEAD;
+        for (size_t i = 0; i < container->size; i++) {
+            rstack_t *substack = container->array[i];
+            if (substack->type == CONTAINER) {
+                scan(substack);
+            }
+        }
+    }
 };
 
-static void collect(rstack_t *stack) {
+static void collect_garbage(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
-    if (container->visited) 
-        return;
 
-    if (container->references <= 0) {
-        container->visited = true;
-        
+    if (container->state == PROVISIONALLY_DEAD) {
+        container->state = DEAD;
         for (size_t i = 0; i < container->size; i++) {
             rstack_t *substack = stack->as.container->array[i];
             if (substack->type == CONTAINER) {
-                // substack->as.container->references--;
-                collect(substack);
+                collect_garbage(substack);
             } else {
                 free(substack);
             }
         }
-        container->visited = false;
+
         free(container->array);
         free(container);
         free(stack);
+    }
+}
+
+static void resurrect_rescued(rstack_t *stack) {
+    rstack_container_t *container = stack->as.container;
+    
+    if (container->state == RESCUED) {
+        container->state = NORMAL;
+        for (size_t i = 0; i < container->size; i++) {
+            rstack_t *substack = stack->as.container->array[i];
+            if (substack->type == CONTAINER) {
+                resurrect_rescued(substack);
+            }
+        }
     }
 }
 
@@ -152,8 +171,9 @@ void rstack_delete(rstack_t *rs) {
             free(rs);
         } else {
             increment_or_decrement(rs, false);
-            scan_and_rescue(rs);
-            collect(rs);
+            scan(rs);
+            resurrect_rescued(rs);
+            collect_garbage(rs);
         }
     }
 }
