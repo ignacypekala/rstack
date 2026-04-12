@@ -67,42 +67,37 @@ rstack_t *rstack_new() {
 static void increment_or_decrement(rstack_t *stack, bool should_increment) {
     rstack_container_t *container = stack->as.container;
 
-
     container->visited = true;
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *substack = container->array[i];
         if (substack->type == CONTAINER) {
-            substack->as.container->references += should_increment ? +1 : -1;
-            if (container->visited) return;
-            increment_or_decrement(substack, should_increment);
+            rstack_container_t *substack_container = substack->as.container;
+            substack_container->references += should_increment ? +1 : -1;
+            if (!substack_container->visited) {
+                increment_or_decrement(substack, should_increment);
+            }
         }
     }
     container->visited = false;
 }
 
-static int scan(rstack_t *stack, rstack_container_t *alive) {
+static int scan_and_rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
-    if (container->references > 0) {
-        if (rstack_container_push(alive, stack) != 0) return -1;
-    }
-
     if (container->visited) return 0;
     container->visited = true;
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = stack->as.container->array[i];
-        if (substack->type == CONTAINER) {
-            scan(substack, alive);
-        }
+       rstack_t *substack = container->array[i];
+       if (substack->type == CONTAINER) {
+           rstack_container_t *substack_container = substack->as.container;
+           if (container->references > 0) {
+               substack_container->references++;
+           }
+           scan_and_rescue(substack);
+       }
     }
     container->visited = false;
     return 0;
 };
-
-static void rescue(rstack_container_t *alive) {
-    for (size_t i = 0; i < alive->size; i++) {
-        increment_or_decrement(alive->array[i], true);
-    }
-}
 
 static void collect(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
@@ -114,11 +109,13 @@ static void collect(rstack_t *stack) {
         for (size_t i = 0; i < container->size; i++) {
             rstack_t *substack = stack->as.container->array[i];
             if (substack->type == CONTAINER) {
+                substack->as.container->references--;
                 collect(substack);
             } else {
                 free(substack);
             }
         }
+        container->visited = false;
         free(container->array);
         free(container);
         free(stack);
@@ -145,16 +142,7 @@ void rstack_delete(rstack_t *rs) {
             free(rs);
         } else {
             increment_or_decrement(rs, false);
-            rstack_container_t *alive = init_rstack_container(INITIAL_ARRAY_SIZE);
-            if (alive == nullptr) {
-                return; 
-            }
-            scan(rs, alive);
-            rescue(alive);
-
-            free(alive->array);
-            free(alive);
-
+            scan_and_rescue(rs);
             collect(rs);
         }
     }
