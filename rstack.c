@@ -64,6 +64,67 @@ rstack_t *rstack_new() {
     return rs;
 }
 
+static void increment_or_decrement(rstack_t *stack, bool should_increment) {
+    rstack_container_t *container = stack->as.container;
+
+
+    container->visited = true;
+    for (size_t i = 0; i < container->size; i++) {
+        rstack_t *substack = container->array[i];
+        if (substack->type == CONTAINER) {
+            substack->as.container->references += should_increment ? +1 : -1;
+            if (container->visited) return;
+            increment_or_decrement(substack, should_increment);
+        }
+    }
+    container->visited = false;
+}
+
+static int scan(rstack_t *stack, rstack_container_t *alive) {
+    rstack_container_t *container = stack->as.container;
+    if (container->references > 0) {
+        if (rstack_container_push(alive, stack) != 0) return -1;
+    }
+
+    if (container->visited) return 0;
+    container->visited = true;
+    for (size_t i = 0; i < container->size; i++) {
+        rstack_t *substack = stack->as.container->array[i];
+        if (substack->type == CONTAINER) {
+            scan(substack, alive);
+        }
+    }
+    container->visited = false;
+    return 0;
+};
+
+static void rescue(rstack_container_t *alive) {
+    for (size_t i = 0; i < alive->size; i++) {
+        increment_or_decrement(alive->array[i], true);
+    }
+}
+
+static void collect(rstack_t *stack) {
+    rstack_container_t *container = stack->as.container;
+    if (container->visited) return;
+
+    if (container->references <= 0) {
+        container->visited = true;
+        
+        for (size_t i = 0; i < container->size; i++) {
+            rstack_t *substack = stack->as.container->array[i];
+            if (substack->type == CONTAINER) {
+                collect(substack);
+            } else {
+                free(substack);
+            }
+        }
+        free(container->array);
+        free(container);
+        free(stack);
+    }
+}
+
 /*
  * Deletes an rstack and its contents.
  * For containers, it decrements the reference count and performs a recursive
@@ -71,21 +132,31 @@ rstack_t *rstack_new() {
  */
 void rstack_delete(rstack_t *rs) {
     if (rs == nullptr) return;
-
-    if (rs->type == CONTAINER) {
+    if (rs->type == NUMBER) {
+        free(rs);
+    } else {
         rstack_container_t *container = rs->as.container;
-        container->references--;
-        
-        if (container->references <= 0) {
+        if (--container->references <= 0) {
             for (size_t i = 0; i < container->size; i++) {
                 rstack_delete(container->array[i]);
             }
             free(container->array);
             free(container);
             free(rs);
+        } else {
+            increment_or_decrement(rs, false);
+            rstack_container_t *alive = init_rstack_container(INITIAL_ARRAY_SIZE);
+            if (alive == nullptr) {
+                return; 
+            }
+            scan(rs, alive);
+            rescue(alive);
+
+            free(alive->array);
+            free(alive);
+
+            collect(rs);
         }
-    } else {
-        free(rs);
     }
 }
 
