@@ -14,7 +14,6 @@ all: librstack.so
 librstack.so: rstack.o memory_tests.o rstack_container.o
 	$(CC) $^ -o $@ $(LDFLAGS) 
 
-# Programs dynamically linked with librstack.so in the same directory
 rstack_%: rstack_%.o librstack.so
 	$(CC) $^ -o $@ -L . -l rstack -Wl,-rpath,'.'
 
