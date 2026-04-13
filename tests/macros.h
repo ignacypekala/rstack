@@ -2,17 +2,16 @@
 #define TEST_MACROS
 
 #include <inttypes.h>
-#include <stdio.h>
+#include <stdio.h> // IWYU pragma: keep (this stops clangd from reporting this include as unnecessary)
 
 #define PASS 0
 #define FAIL 1
-#define VALGRIND_ERROR 3
 
 #define OUTPUT_FILE "test.fout"
 
 #define REPORT(...)                                                            \
     do {                                                                       \
-        fprintf(stderr, "%s (%s:%d): ", __func__, __FILE__, __LINE__);         \
+        fprintf(stderr, "%s:%d (%s): ", __FILE__, __LINE__, __func__);         \
         fprintf(stderr, __VA_ARGS__);                                          \
         fprintf(stderr, "\n");                                                 \
     } while (0)
@@ -22,33 +21,44 @@
 #define ASSERT(f)                                                              \
     do {                                                                       \
         if (!(f)) {                                                            \
-            REPORT("Assertion failed: (%s)", #f);                              \
+            REPORT("Assertion failed: %s", #f);                                \
             return FAIL;                                                       \
         }                                                                      \
     } while (0)
+
+// If __VA_ARGS__ has a value, use it. Otherwise, fallback to 0.
+#define GET_EXPECTED(...) __VA_OPT__(__VA_ARGS__) __VA_OPT__(+) 0UL
 
 #define ASSERT_RESULT(c, f, ...)                                               \
     do {                                                                       \
         result_t r = c;                                                        \
         if (r.flag != (f)) {                                                   \
-            REPORT("Result assertion failed, expected flag == %s.",            \
-                   f ? "true" : "false");                                      \
+            REPORT("Result assertion failed, %s.flag is \"%s\" but should be " \
+                   "\"%s\".",                                                  \
+                   #c,                                                         \
+                   r.flag ? "true" : "false",                                  \
+                   #f);                                                        \
             return FAIL;                                                       \
         }                                                                      \
         if ((f) && r.value != __VA_ARGS__ - 0) {                               \
-            REPORT("Result assertion failed, expected value == %" PRIu64 ".",  \
-                   (uint64_t)__VA_ARGS__);                                     \
+            REPORT("Result assertion failed, %s.value is %" PRIu64             \
+                   " but should be %" PRIu64 ".",                              \
+                   #c,                                                         \
+                   r.value,                                                    \
+                   GET_EXPECTED());                                            \
             return FAIL;                                                       \
         }                                                                      \
     } while (0)
 
-#define NO_ERROR(f)                                                   \
+#define NO_ERROR(f)                                                            \
     do {                                                                       \
         if ((f) != 0) {                                                        \
-            REPORT("An error occured.");                                       \
+            REPORT(                                                            \
+              "Expected %s to exit with no error but it returned %d", #f, f);  \
             return FAIL;                                                       \
         }                                                                      \
     } while (0)
+#define CHECK_IF_NO_ERROR(f) NO_ERROR(f);
 
 #define PRINT_U64(v) printf("%" PRIu64 "\n", v);
 
