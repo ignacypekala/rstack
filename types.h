@@ -1,5 +1,9 @@
 /*
- * Defines shared datatypes for use in different files
+ * Defines shared datatypes for use in other files.
+ *
+ * Note: To prevent ambiguity between the overall 'rstack_t' type and the
+ * specific variants that hold nested elements, the latter are referred to as
+ * "containers".
  */
 #ifndef RSTACK_TYPES
 #define RSTACK_TYPES
@@ -8,13 +12,15 @@
 #include <inttypes.h>
 #include "rstack.h"
 
-// Rstack garbage collector state AKA the node color
+
+// Represents the lifecycle state of a node during trial deletion. 
+// It is the equivalent of a color in the Bacon/Rajan trial deletion algorithm.
 enum rstack_gc_state {
-    NORMAL, // (uncolored/black)
-    UNDER_TRIAL, // (gray)
-    RESCUED, // (black)
-    PROVISIONALLY_DEAD, // (white)
-    DEAD,
+    NORMAL,
+    UNDER_TRIAL,
+    RESCUED,
+    PROVISIONALLY_DEAD,
+    DEAD
 };
 
 typedef struct {
@@ -31,6 +37,7 @@ enum rstack_type {
     NUMBER 
 };
 
+// The generic rstack object
 typedef struct rstack {
     enum rstack_type type;
     union {

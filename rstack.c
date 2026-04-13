@@ -1,5 +1,6 @@
 #include "rstack.h"
 #include "rstack_container.h"
+#include "rstack_delete.h"
 #include "types.h"
 #include <ctype.h>
 #include <errno.h>
@@ -11,7 +12,7 @@
 
 static const int UINT64_MAX_STRING_LENGTH = 20;
 static const char* UINT64_STRING_FORMAT = "%20s";
-static const size_t INITIAL_ARRAY_SIZE = 10;
+static const size_t RSTACK_INITAL_CAPACITY = 10;
 
 /*
  * Internal helper to allocate a generic rstack structure.
@@ -45,7 +46,7 @@ static rstack_t *rstack_container_new() {
     if (rs == nullptr) return nullptr;
     rs->type = CONTAINER;
 
-    rs->as.container = init_rstack_container(INITIAL_ARRAY_SIZE);
+    rs->as.container = init_rstack_container(RSTACK_INITAL_CAPACITY);
     if (rs->as.container == nullptr) {
         free(rs);
         return nullptr;
@@ -62,118 +63,6 @@ rstack_t *rstack_new() {
     rstack_t *rs = rstack_container_new();
     if (rs == nullptr) errno = ENOMEM;
     return rs;
-}
-
-static void decrement(rstack_t *stack) {
-    rstack_container_t *container = stack->as.container;
-    container->state = UNDER_TRIAL;
-
-    for (size_t i = 0; i < container->size; i++) {
-        rstack_t *element = container->array[i];
-        if (element->type == CONTAINER) {
-            rstack_container_t *element_container = element->as.container;
-            element_container->references--;
-            if (element_container->state != UNDER_TRIAL) {
-                decrement(element);
-            }
-        }
-    }
-}
-
-static void rescue(rstack_t *stack) {
-    rstack_container_t *container = stack->as.container;
-    container->state = RESCUED;
-    for (size_t i = 0; i < container->size; i++) {
-        rstack_t *element = container->array[i];
-        if (element->type == CONTAINER) {
-            rstack_container_t *element_container = element->as.container;
-            element_container->references++;
-            if (element_container->state != RESCUED) {
-                rescue(element);
-            }
-        }
-    }
-}
-static void scan(rstack_t *stack) {
-    rstack_container_t *container = stack->as.container;
-    if (container->state != UNDER_TRIAL) return;
-    if (container->references > 0) {
-        rescue(stack);
-    } else {
-        container->state = PROVISIONALLY_DEAD;
-        for (size_t i = 0; i < container->size; i++) {
-            rstack_t *element = container->array[i];
-            if (element->type == CONTAINER) {
-                scan(element);
-            }
-        }
-    }
-};
-
-static void collect_garbage(rstack_t *stack) {
-    rstack_container_t *container = stack->as.container;
-
-    if (container->state == PROVISIONALLY_DEAD) {
-        container->state = DEAD;
-        for (size_t i = 0; i < container->size; i++) {
-            rstack_t *element = stack->as.container->array[i];
-            if (element->type == CONTAINER) {
-                collect_garbage(element);
-            } else {
-                free(element);
-            }
-        }
-
-        free(container->array);
-        free(container);
-        free(stack);
-    }
-}
-
-static void resurrect_rescued(rstack_t *stack) {
-    rstack_container_t *container = stack->as.container;
-    
-    if (container->state == RESCUED) {
-        container->state = NORMAL;
-        for (size_t i = 0; i < container->size; i++) {
-            rstack_t *element = stack->as.container->array[i];
-            if (element->type == CONTAINER) {
-                resurrect_rescued(element);
-            }
-        }
-    }
-}
-
-/*
- * Releases the given rstack.
- * Numbers are immediately freed, while containers have their reference counter
- * decremented. 
- * The latter are freed if and only if they are no longer referenced by any
- * other object. If an object had their reference
- * counter but its reference counter is still positive trial deletion is run
- * to detect ghost cycles.
- */
-void rstack_delete(rstack_t *rs) {
-    if (rs == nullptr) return;
-    if (rs->type == NUMBER) {
-        free(rs);
-    } else {
-        rstack_container_t *container = rs->as.container;
-        if (--container->references <= 0) {
-            for (size_t i = 0; i < container->size; i++) {
-                rstack_t *element = container->array[i];
-                rstack_delete(element);
-            }
-            free(container->array);
-            free(container);
-            free(rs);
-        } else {
-            decrement(rs);
-            scan(rs);
-            resurrect_rescued(rs);
-            collect_garbage(rs);
-        }
-    }
 }
 
 /*
@@ -202,9 +91,9 @@ int rstack_push_value(rstack_t *rs, uint64_t value) {
 }
 
 /*
- * Pushes one rstack onto another and increments the reference count of the child.
- * Returns 0 on success, -1 on error.
- * Possible errno values:
+ * Pushes one rstack onto another and increments the reference count of the
+ * child. 
+ * Returns 0 on success, -1 on error. Possible errno values:
  * - EINVAL: rs1 or rs2 is nullptr.
  * - ENOMEM: Memory allocation failed for container growth.
  */
@@ -325,7 +214,7 @@ rstack_t *rstack_read(char const *path) {
             rstack_delete(stack);
             fclose(file);
             return nullptr;
-        };
+        }
     }
     fclose(file);
     return stack;
@@ -369,8 +258,10 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
  * Returns 0 on success, -1 on error.
  * Possible errno values:
  * - EINVAL: path or rs is nullptr.
- * - Any errno set by fopen: https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
- * - Any errno set by fprintf: https://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html
+ * - Any errno set by fopen:
+ *   https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
+ * - Any errno set by fprintf:
+ *   https://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html
  */
 int rstack_write(char const *path, rstack_t *rs) {
     if (path == nullptr || rs == nullptr) {
