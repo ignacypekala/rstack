@@ -64,17 +64,17 @@ rstack_t *rstack_new() {
     return rs;
 }
 
-static void increment_or_decrement(rstack_t *stack, bool should_increment) {
+static void decrement(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
     container->state = UNDER_TRIAL;
 
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = container->array[i];
-        if (substack->type == CONTAINER) {
-            rstack_container_t *substack_container = substack->as.container;
-            substack_container->references += should_increment ? +1 : -1;
-            if (substack_container->state != UNDER_TRIAL) {
-                increment_or_decrement(substack, should_increment);
+        rstack_t *element = container->array[i];
+        if (element->type == CONTAINER) {
+            rstack_container_t *element_container = element->as.container;
+            element_container->references--;
+            if (element_container->state != UNDER_TRIAL) {
+                decrement(element);
             }
         }
     }
@@ -84,12 +84,12 @@ static void rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
     container->state = RESCUED;
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = container->array[i];
-        if (substack->type == CONTAINER) {
-            rstack_container_t *substack_container = substack->as.container;
-            substack_container->references++;
-            if (substack_container->state != RESCUED) {
-                rescue(substack);
+        rstack_t *element = container->array[i];
+        if (element->type == CONTAINER) {
+            rstack_container_t *element_container = element->as.container;
+            element_container->references++;
+            if (element_container->state != RESCUED) {
+                rescue(element);
             }
         }
     }
@@ -102,9 +102,9 @@ static void scan(rstack_t *stack) {
     } else {
         container->state = PROVISIONALLY_DEAD;
         for (size_t i = 0; i < container->size; i++) {
-            rstack_t *substack = container->array[i];
-            if (substack->type == CONTAINER) {
-                scan(substack);
+            rstack_t *element = container->array[i];
+            if (element->type == CONTAINER) {
+                scan(element);
             }
         }
     }
@@ -116,11 +116,11 @@ static void collect_garbage(rstack_t *stack) {
     if (container->state == PROVISIONALLY_DEAD) {
         container->state = DEAD;
         for (size_t i = 0; i < container->size; i++) {
-            rstack_t *substack = stack->as.container->array[i];
-            if (substack->type == CONTAINER) {
-                collect_garbage(substack);
+            rstack_t *element = stack->as.container->array[i];
+            if (element->type == CONTAINER) {
+                collect_garbage(element);
             } else {
-                free(substack);
+                free(element);
             }
         }
 
@@ -136,18 +136,22 @@ static void resurrect_rescued(rstack_t *stack) {
     if (container->state == RESCUED) {
         container->state = NORMAL;
         for (size_t i = 0; i < container->size; i++) {
-            rstack_t *substack = stack->as.container->array[i];
-            if (substack->type == CONTAINER) {
-                resurrect_rescued(substack);
+            rstack_t *element = stack->as.container->array[i];
+            if (element->type == CONTAINER) {
+                resurrect_rescued(element);
             }
         }
     }
 }
 
 /*
- * Deletes an rstack and its contents.
- * For containers, it decrements the reference count and performs a recursive
- * deletion if the count reaches zero. Does nothing if rs is a nullptr.
+ * Releases the given rstack.
+ * Numbers are immediately freed, while containers have their reference counter
+ * decremented. 
+ * The latter are freed if and only if they are no longer referenced by any
+ * other object. If an object had their reference
+ * counter but its reference counter is still positive trial deletion is run
+ * to detect ghost cycles.
  */
 void rstack_delete(rstack_t *rs) {
     if (rs == nullptr) return;
@@ -157,20 +161,14 @@ void rstack_delete(rstack_t *rs) {
         rstack_container_t *container = rs->as.container;
         if (--container->references <= 0) {
             for (size_t i = 0; i < container->size; i++) {
-                rstack_t *substack = container->array[i];
-                rstack_delete(substack);
+                rstack_t *element = container->array[i];
+                rstack_delete(element);
             }
-            // for (size_t i = 0; i < container->size; i++) {
-            //     rstack_t *substack = container->array[i];
-            //     if (substack->type == NUMBER) {
-            //         free(substack);
-            //     }
-            // }
             free(container->array);
             free(container);
             free(rs);
         } else {
-            increment_or_decrement(rs, false);
+            decrement(rs);
             scan(rs);
             resurrect_rescued(rs);
             collect_garbage(rs);
@@ -249,13 +247,13 @@ result_t rstack_front(rstack_t *rs) {
     container->visited = true;
 
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = container->array[container->size - i - 1];
-        if (substack->type == NUMBER) {
+        rstack_t *element = container->array[container->size - i - 1];
+        if (element->type == NUMBER) {
             t.flag = true;
-            t.value = substack->as.number;
+            t.value = element->as.number;
             break;
         } else {
-            t = rstack_front(substack);
+            t = rstack_front(element);
             if (t.flag) break;
         }
     }
@@ -349,14 +347,14 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
     int return_code = 0;
 
     for (size_t i = 0; i < container->size; i++) {
-        rstack_t *substack = container->array[i];
-        if (substack->type == NUMBER) {
-            if (fprintf(file, "%" PRIu64 "\n", substack->as.number) < 0) {
+        rstack_t *element = container->array[i];
+        if (element->type == NUMBER) {
+            if (fprintf(file, "%" PRIu64 "\n", element->as.number) < 0) {
                 return_code = -1;
                 break;
             }
         } else {
-            int code = rstack_write_helper(file, substack);
+            int code = rstack_write_helper(file, element);
             return_code = code;
             if (code != 0) break;
         }
