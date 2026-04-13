@@ -19,8 +19,8 @@ int main() {
     NO_ERROR(rstack_write(OUTPUT_FILE, A));
     rstack_t *C = rstack_read(OUTPUT_FILE);
 
-    ASSERT_RESULT(rstack_front(C), true, 3); rstack_pop(C);
-    ASSERT_RESULT(rstack_front(C), true, 4); rstack_pop(C);
+    ASSERT_RESULT(rstack_front(C), true, 2); rstack_pop(C);
+    ASSERT_RESULT(rstack_front(C), true, 1); rstack_pop(C);
     ASSERT_RESULT(rstack_front(C), false, 0);
 
     rstack_delete(A);
