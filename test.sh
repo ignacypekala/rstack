@@ -87,9 +87,11 @@ ensure_exists "$c_file"
 > test.stderr
 > test.make
 
+executable="test_${test_name}_executable"
+
 # compile
 SECONDS=0
-TEST_BATCH=$batch_name make test_$test_name -s &> test.make
+TEST_BATCH=$batch_name make "$executable" -s &> test.make
 compilation_code=$?
 compilation_time=$SECONDS
 
@@ -108,7 +110,7 @@ cmd=(
     valgrind --track-origins=yes
     --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all
     --log-file="./test.valgrind" -q
-    ./test_$test_name 
+    "./$executable"
     
 )
 
