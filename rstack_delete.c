@@ -107,25 +107,42 @@ static void gc_resurrect_rescued(rstack_t *stack) {
 }
 
 /*
- * Performs the final phase of trial deletion by reclaiming isolated cycles.
- * Traverses PROVISIONALLY_DEAD nodes, temporarily marking them as DEAD to 
- * prevent redundant visits, and recursively frees their allocated memory.
+ * Starts the garbage collection phase by linking the dead containers in an
+ * intrusive linked list. Traverses PROVISIONALLY_DEAD nodes, marking them as
+ * DEAD to prevent redundant visits. Numerical objects are instantly freed.
+ *  - stack - the stack where the corpses are picked up from
+ *  - head - the place where the pointer to the current end of the list is stored
  */
-static void gc_reclaim(rstack_t *stack) {
+static void gc_mark_dead(rstack_t *stack, rstack_t **head) {
     rstack_container_t *container = stack->as.container;
 
     if (container->state == PROVISIONALLY_DEAD) {
         container->state = DEAD;
 
+        (*head)->as.container->gc_next = stack;
+        *head = stack;
+
         for (size_t i = 0; i < container->size; i++) {
             rstack_t *element = stack->as.container->array[i];
 
             if (element->type == CONTAINER) {
-                gc_reclaim(element);
+                gc_mark_dead(element, head);
             } else {
                 free(element);
             }
         }
+    }
+}
+
+/*
+ * Walks the linked list freeing the stored elements
+ */
+static void gc_reclaim(rstack_t *start) {
+    rstack_t *next = start;
+    while (next != nullptr) {
+        rstack_t *stack = next;
+        rstack_container_t *container = stack->as.container;
+        next = container->gc_next;
 
         free(container->array);
         free(container);
@@ -160,7 +177,17 @@ void rstack_delete(rstack_t *rs) {
             gc_simulate_deletion(rs);
             gc_scan_for_rescue(rs);
             gc_resurrect_rescued(rs);
-            gc_reclaim(rs);
+
+            // Create a dummy container to store the beginning of the list.
+            rstack_container_t dummy_container = { 
+                .gc_next = nullptr 
+            };
+            rstack_t dummy = { 
+                .as.container = &dummy_container 
+            };
+            rstack_t *head = &dummy;
+            gc_mark_dead(rs, &head);
+            gc_reclaim(dummy.as.container->gc_next);
         }
     }
 }
