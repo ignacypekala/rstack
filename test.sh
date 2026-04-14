@@ -6,6 +6,8 @@ BOLD_WHITE='\e[1;97m'
 WHITE='\e[97m'
 RESET='\e[0m'
 
+VALGRIND_TRACK_ORIGINS=yes
+
 batch_name=$1
 test_name=$2
 if [[ -v 3 ]]; then
@@ -48,6 +50,11 @@ function end() {
         cat test.make
     fi
 
+    if [[ ( $code == 0 || $code == 3 ) && -s test.valgrind ]]; then
+        echo "test.valgrind:"
+        cat test.valgrind
+    fi
+
     if [[ $code == 0 ]]; then
         pass 
     elif [[ $code == 3 ]]; then
@@ -56,13 +63,6 @@ function end() {
         fail
     fi
     echo -e "${TEST_NAME} $msg"
-
-    if [[ ( $code == 0 || $code == 3 ) && -s test.valgrind ]]; then
-        echo "test.valgrind:"
-        cat test.valgrind
-        echo
-    fi
-
 
     exit $code
 }
@@ -94,9 +94,11 @@ fi
 
 # Craft a command for running the test
 cmd=( 
-    valgrind --track-origins=yes
+    valgrind 
+    --track-origins=$VALGRIND_TRACK_ORIGINS
     --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all
-    --log-file="./test.valgrind" -q
+    -q
+    --log-file="./test.valgrind" 
     "./$executable"
     
 )
