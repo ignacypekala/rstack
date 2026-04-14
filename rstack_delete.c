@@ -107,11 +107,12 @@ static void gc_resurrect_rescued(rstack_t *stack) {
 }
 
 /*
- * Starts the garbage collection phase by linking the dead containers in an
- * intrusive linked list. Traverses PROVISIONALLY_DEAD nodes, marking them as
- * DEAD to prevent redundant visits. Numerical objects are instantly freed.
- *  - stack - the stack where the corpses are picked up from
- *  - head - the place where the pointer to the current end of the list is stored
+ * Identifies nodes for reclamation by traversing the subgraph of provisionally
+ * dead containers and linking them into an intrusive list. Marks nodes as 
+ * DEAD to prevent redundant visits and immediately deallocates numerical 
+ * leaf nodes.
+ * - stack: The root node from which the dead-node search originates.
+ * - head: A pointer to the current tail of the intrusive linked list.
  */
 static void gc_mark_dead(rstack_t *stack, rstack_t **head) {
     rstack_container_t *container = stack->as.container;
@@ -135,7 +136,10 @@ static void gc_mark_dead(rstack_t *stack, rstack_t **head) {
 }
 
 /*
- * Walks the linked list freeing the stored elements
+ * Finalizes garbage collection by traversing the intrusive linked list 
+ * of DEAD nodes. Deallocates internal storage arrays, container structures, 
+ * and the rstack objects themselves.
+ * - start: The first element of the intrusive linked list to be reclaimed.
  */
 static void gc_reclaim(rstack_t *start) {
     rstack_t *next = start;
@@ -178,16 +182,15 @@ void rstack_delete(rstack_t *rs) {
             gc_scan_for_rescue(rs);
             gc_resurrect_rescued(rs);
 
-            // Create a dummy container to store the beginning of the list.
-            rstack_container_t dummy_container = { 
+            rstack_container_t sentinel_container = { 
                 .gc_next = nullptr 
             };
-            rstack_t dummy = { 
-                .as.container = &dummy_container 
+            rstack_t sentinel = { 
+                .as.container = &sentinel_container 
             };
-            rstack_t *head = &dummy;
+            rstack_t *head = &sentinel;
             gc_mark_dead(rs, &head);
-            gc_reclaim(dummy.as.container->gc_next);
+            gc_reclaim(sentinel.as.container->gc_next);
         }
     }
 }
