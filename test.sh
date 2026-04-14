@@ -1,13 +1,4 @@
 #!/bin/bash
-# Usage
-# For tests without arguments:
-# ./tests.sh TEST_NAME
-# In this case $TEST_DIR/TEST_NAME.(fout|stdout) are analyzed.
-#
-# For tests with arguments in $TEST_DIR/TEST_NAME/INPUT_NAME.args:
-# ./tests.sh TEST_NAME INPUT_NAME
-# In this case $TEST_DIR/TEST_NAME/INPUT_NAME.(fout|stdout) are analyzed.
-
 BG_RED_BLACK='\e[1;38;5;0;48;5;1m'
 BG_GREEN_BLACK='\e[1;38;5;0;48;5;2m'
 BG_YELLOW_BLACK='\e[1;38;5;0;48;5;3m'
@@ -15,35 +6,80 @@ BOLD_WHITE='\e[1;97m'
 WHITE='\e[97m'
 RESET='\e[0m'
 
-TEST_DIR="./tests"
+batch_name=$1
+test_name=$2
+if [[ -v 3 ]]; then
+    test_case=$3
+fi
 
-name=$1
-if [[ -v 2 ]]; then
-    TEST_NAME="${BOLD_WHITE}${name} ${WHITE}(${2})${RESET}"
+if [[ -v test_case ]]; then
+    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}(${2})${RESET}"
 else
-    TEST_NAME="${BOLD_WHITE}${name}${RESET}"
+    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${RESET}"
 fi
 function pass() {
-    echo -e "${BG_GREEN_BLACK} PASS ${RESET} ${TEST_NAME} $*"
+    echo -ne "${BG_GREEN_BLACK} PASS ${RESET} "
 }
 function fail() {
-    echo -e "${BG_RED_BLACK} FAIL ${RESET} ${TEST_NAME} $*"
+    echo -ne "${BG_RED_BLACK} FAIL ${RESET} "
 }
 function warn() {
-    echo -e "${BG_YELLOW_BLACK} WARN ${RESET} ${TEST_NAME} $*"
+    echo -ne "${BG_YELLOW_BLACK} WARN ${RESET} "
 }
 
 function show_diff() {
     diff -u --color "$1" "$2"
 }
 
+function end() {
+    code=$1; shift
+    show=$1; shift
+    msg=$*
+    if [[ $code == 0 ]]; then
+        pass 
+    elif [[ $code == 3 ]]; then
+        warn
+    else
+        fail
+    fi
+    echo -e "${TEST_NAME} $msg"
+
+    if [[ ( $code == 0 || $code == 3 ) && -s test.valgrind ]]; then
+        echo "test.valgrind:"
+        cat test.valgrind
+        echo
+    fi
+    if [[ -s test.stderr ]]; then
+        echo "test.stderr:"
+        cat test.stderr
+        echo
+    fi
+
+    case $show in
+        fout)
+            show_diff "$fout_file" test.fout
+            echo
+            ;;
+        stdout)
+            show_diff "$stdout_file" test.stdout
+            echo
+            ;;
+        make)
+            cat test.make
+            echo
+            ;;
+    esac
+
+    exit $code
+    
+}
+
 function ensure_exists() {
     if ! [[ -e "$1" ]]; then
-        fail "$1 doesn't exist"
-        exit 1
+        end 1 no "$1 doesn't exist"
     fi
 }
-c_file="$TEST_DIR/$name.c"
+c_file="./tests_$batch_name/$test_name.c"
 ensure_exists "$c_file"
 
 # Clear output files
@@ -53,16 +89,14 @@ ensure_exists "$c_file"
 > test.stderr
 > test.make
 
+# compile
 SECONDS=0
-make test_$name -s &> test.make
+TEST_BATCH=$batch_name make test_$test_name -s &> test.make
 compilation_code=$?
 compilation_time=$SECONDS
 
 if [[ $compilation_code != 0 ]]; then
-    fail "failed to compile:"
-    cat test.make
-    echo
-    exit 1
+    end 1 make "failed to compile"
 fi
 
 if [[ -s test.make ]]; then
@@ -71,89 +105,64 @@ if [[ -s test.make ]]; then
 fi
 
 
-
 # Craft a command for running the test
 cmd=( 
     valgrind --track-origins=yes
     --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all
     --log-file="./test.valgrind" -q
-    ./test_$name 
+    ./test_$test_name 
     
 )
 
-# If INPUT_NAME was given
-if [[ -v 2 ]]; then 
-    input_name="$2"
-    args_file="$TEST_DIR/$name/${input_name}.args"
-    ensure_exists "$args_file"
-
-    cmd+=( $(cat "$args_file") )
-
-    fout_file="$TEST_DIR/$name/${input_name}.fout"
-    stdout_file="$TEST_DIR/$name/${input_name}.stdout"
+if [[ -v test_case ]]; then 
+    case_file_format="./tests_$batch_name/$test_name/$test_case"
 else
-    fout_file="$TEST_DIR/${name}.fout"
-    stdout_file="$TEST_DIR/${name}.stdout"
+    case_file_format=="./tests_$batch_name/$test_name"
 fi
+args_file="$case_file_format.args"
+in_file="$case_file_format.in"
+fout_file="$case_file_format.fout"
+stdout_file="$case_file_format.stdout"
 
-if ! [[ -e "$fout_file" ]]; then
-    unset fout_file
-fi
-if ! [[ -e "$stdout_file" ]]; then
-    unset stdout_file
-fi
+[[ -e $args_file ]] && cmd+=( $(cat "$args_file") )
+[[ -e $in_file ]] || unset in_file
+[[ -e $fout_file ]] || unset fout_file
+[[ -e $stdout_file ]] || unset stdout_file
 
-# Run and pipe to test.stdout
+in_file="${in_file:-/dev/stdin}"
+
+# run
 SECONDS=0
-"${cmd[@]}" > test.stdout 2> test.stderr
+LD_LIBRARY_PATH=. timeout 60s "${cmd[@]}" > test.stdout 2> test.stderr < $in_file
 code=$?
 execution_time=$SECONDS
 
 exitcode=0;
 
-function print_stderr() {
-    if [[ -s test.stderr ]]; then
-        if [[ $1 == "true" ]]; then
-            warn "Stderr is not empty:"
-        fi
-        cat test.stderr
-        echo
-    fi
-}
-
 if [[ $code == 0 ]]; then
     # Check stdout
     if [[ -v stdout_file ]] && ! diff -q "$stdout_file" test.stdout > /dev/null
     then
-        fail The standard outputs differ:
-        show_diff "$stdout_file" test.stdout
-        print_stderr false
-        exit 2
+        end 2 stdout "the standard outputs differ"
     fi
 
     # Check file output
     if [[ -v fout_file ]] && ! diff -q "$fout_file" test.fout > /dev/null
     then
-        fail The file outputs differ:
-        show_diff "$fout_file" test.fout
-        print_stderr false
-        exit 2
+        end 2 fout "the file outputs differ"
     fi
-
-    print_stderr true
 
     # Check valgrind report
     if [[ -s test.valgrind ]]; then
-        warn "Valgrind reported errors in $name:"
-        cat test.valgrind
-        echo
-        exit 3
+        end 3 no "valgrind reported errors"
     fi
 
-    pass ${execution_time}s
+    end 0 no "${execution_time}s"
     exit 0
 else
-    fail exited with code $code:
-    print_stderr false
-    exit 2
+    if [[ $code == 124 ]]; then
+        end 3 no "program timed out after 60s"
+    fi
+
+    end 2 no "exited with code $code"
 fi

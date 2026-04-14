@@ -1,4 +1,4 @@
-#include "macros.h"
+#include "../macros.h"
 #include "../rstack.h"
 #include <assert.h>
 #include <stdio.h>

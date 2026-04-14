@@ -1,6 +1,6 @@
-#include "macros.h"
-#include <stdint.h>
+#include "../macros.h"
 #include "../rstack.h"
+#include <stdint.h>
 
 int main() {
     rstack_t *stack = rstack_new();

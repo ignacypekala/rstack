@@ -1,5 +1,5 @@
 #include "../rstack.h"
-#include "macros.h"
+#include "../macros.h"
 
 int main(void) {
     rstack_t *rs5 = rstack_new();

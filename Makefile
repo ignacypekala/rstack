@@ -17,15 +17,15 @@ librstack.so: rstack.o memory_tests.o rstack_container.o rstack_delete.o
 rstack_%: rstack_%.o librstack.so
 	$(CC) $^ -o $@ -L . -l rstack -Wl,-rpath,'.'
 
-test_%.o: ./tests/%.c ./tests/macros.h
+TEST_BATCH ?= test
+test_%.o: ./tests_$(TEST_BATCH)/%.c macros.h
 	$(CC) -c $< -o $@ $(CFLAGS)
-
 test_%: test_%.o librstack.so
-	$(CC) $^ -o $@ -L . -l rstack -Wl,-rpath,'.'
+	$(CC) $^ -o $@ -L . -lrstack
 
 %.o: %.c %.h
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 clean:
-	rm -f *.o a.out rstack_example librstack.so test_* test.fout test.stdout \
-	test.valgrind test.make test.stderr
+	rm -f *.o a.out rstack_example librstack.so 
+	rm -f test.fout test.stdout test.valgrind test.make test.stderr test_* 

@@ -1,7 +1,7 @@
 #include "../memory_tests.h"
 #include "../rstack.h"
 #include "errno.h"
-#include "macros.h"
+#include "../macros.h"
 
 #define V(code, where) (((unsigned long)code) << (3 * where))
 
