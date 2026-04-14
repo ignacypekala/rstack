@@ -41,6 +41,13 @@ function end() {
     fi
 
     msg=$*
+
+    if [[ $show == diff ]]; then
+        show_diff $diff_file_a $diff_file_b
+    elif [[ $show == make ]]; then
+        cat test.make
+    fi
+
     if [[ $code == 0 ]]; then
         pass 
     elif [[ $code == 3 ]]; then
@@ -55,19 +62,7 @@ function end() {
         cat test.valgrind
         echo
     fi
-    if [[ -s test.stderr ]]; then
-        echo "test.stderr:"
-        cat test.stderr
-        echo
-    fi
 
-    if [[ $show == diff ]]; then
-        show_diff $diff_file_a $diff_file_b
-        echo
-    elif [[ $show == make ]]; then
-        cat test.make
-        echo 
-    fi
 
     exit $code
 }
@@ -84,26 +79,18 @@ ensure_exists "$c_file"
 > test.fout
 > test.stdout
 > test.valgrind
-> test.stderr
-> test.make
 
 executable="test_${test_name}_executable"
 
 # compile
 SECONDS=0
-TEST_BATCH=$batch_name make "$executable" -s &> test.make
+TEST_BATCH=$batch_name make "$executable" -s
 compilation_code=$?
 compilation_time=$SECONDS
 
 if [[ $compilation_code != 0 ]]; then
     end 1 make "failed to compile"
 fi
-
-if [[ -s test.make ]]; then
-    echo
-    cat test.make
-fi
-
 
 # Craft a command for running the test
 cmd=( 
@@ -133,7 +120,7 @@ in_file="${in_file:-/dev/stdin}"
 
 # run
 SECONDS=0
-LD_LIBRARY_PATH=. timeout 60s "${cmd[@]}" > test.stdout 2> test.stderr < $in_file
+LD_LIBRARY_PATH=. timeout 60s "${cmd[@]}" > test.stdout < $in_file
 code=$?
 execution_time=$SECONDS
 

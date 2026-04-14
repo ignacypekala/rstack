@@ -41,7 +41,7 @@ for test in $batch_dir/*.c; do
 
     if [[ ${#case_files} > 0 ]]; then
         for case_file in ${case_files[@]}; do
-            case_name=${case_file#$batch_dir}
+            case_name=${case_file#$batch_dir/$test_name/}
             case_name=${case_name%.*}
             case_name=${case_name%_*}
 
