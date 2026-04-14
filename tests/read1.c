@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
         );
         exit(1);
     }
+    malloc(4);
+    fprintf(stderr, "test\n");
     rstack_t *stack = rstack_read(argv[1]);
     ASSERT(stack != nullptr);
     while (!rstack_empty(stack)) {

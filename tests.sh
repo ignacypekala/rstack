@@ -1,26 +1,25 @@
 #!/bin/bash
 
-passes=0
-fails=0
+passed=0
+failed=0
 warnings=0
 misconfigured=0
 
 function register() {
     case $1 in
         0)
-            ((passes++))
+            ((passed++))
             ;;
         1)
             ((misconfigured++))
             ;;
         2)
-            ((fails++))
+            ((failed++))
             ;;
         3)
             ((warnings++))
             ;;
     esac
-    echo
 }
 for test in ./tests/*.c; do
     test_name=${test#./tests/}
@@ -51,7 +50,18 @@ RED="\e[31m"
 GREEN='\e[32m'
 YELLOW='\e[33m'
 RESET='\e[0m' 
-echo -en "${RESET}Summary: ${GREEN}${passes}${RESET} passed, "
-echo -en "${RED}${fails}${RESET} failed, "
-echo -en "${YELLOW}${warnings}${RESET} exited with warnings "
-echo -e "and ${misconfigured} failed to run."
+echo
+echo -en "${RESET}Summary: "
+echo -en "${GREEN}${passed}${RESET} passed"
+if [[ $failed > 0 ]]; then
+    echo -en ", ${RED}${failed}${RESET} failed"
+fi
+if [[ $warnings > 0 ]]; then
+    echo -en ", ${YELLOW}${warnings}${RESET} raised warnings"
+fi
+if [[ $misconfigured > 0 ]]; then
+    echo -e " and ${RED}${misconfigured}${RESET} failed to run."
+else
+    echo -e "." 
+fi
+

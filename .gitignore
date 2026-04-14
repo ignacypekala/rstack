@@ -7,3 +7,5 @@ test_*
 test.fout
 test.stdout
 test.valgrind
+test.stderr
+test.make

@@ -28,4 +28,4 @@ test_%: test_%.o librstack.so
 
 clean:
 	rm -f *.o a.out rstack_example librstack.so test_* test.fout test.stdout \
-	test.valgrind
+	test.valgrind test.make test.stderr
