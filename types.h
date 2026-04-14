@@ -15,7 +15,9 @@
 
 // Represents the lifecycle state of a node during trial deletion. 
 // It is the equivalent of a color in the Bacon/Rajan trial deletion algorithm.
-enum rstack_gc_state {
+// 
+// Setting the type to unsigned char keeps the enum size down at 1 byte.
+enum rstack_gc_state : unsigned char {
     NORMAL,
     UNDER_TRIAL,
     RESCUED,
@@ -28,9 +30,13 @@ typedef struct {
     size_t               size;
     size_t               capacity;
     uint64_t             references;
-    bool                 visited;
 
-    enum rstack_gc_state state;
+    // Flag 'visited' is for standard traversal, enum 'state'
+    // is for garbage collection. They are never used together.
+    union {
+        bool                 visited;
+        enum rstack_gc_state state;
+    };
 
     // Intrusive list pointer used to queue unreachable nodes during garbage
     // collection
