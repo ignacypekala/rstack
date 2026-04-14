@@ -2,11 +2,11 @@
 # Usage
 # For tests without arguments:
 # ./tests.sh TEST_NAME
-# In this case ./tests/TEST_NAME.(fout|stdout) are analyzed.
+# In this case $TEST_DIR/TEST_NAME.(fout|stdout) are analyzed.
 #
-# For tests with arguments in ./tests/TEST_NAME/INPUT_NAME.args:
+# For tests with arguments in $TEST_DIR/TEST_NAME/INPUT_NAME.args:
 # ./tests.sh TEST_NAME INPUT_NAME
-# In this case ./tests/TEST_NAME/INPUT_NAME.(fout|stdout) are analyzed.
+# In this case $TEST_DIR/TEST_NAME/INPUT_NAME.(fout|stdout) are analyzed.
 
 BG_RED_BLACK='\e[1;38;5;0;48;5;1m'
 BG_GREEN_BLACK='\e[1;38;5;0;48;5;2m'
@@ -14,6 +14,8 @@ BG_YELLOW_BLACK='\e[1;38;5;0;48;5;3m'
 BOLD_WHITE='\e[1;97m'
 WHITE='\e[97m'
 RESET='\e[0m'
+
+TEST_DIR="./tests"
 
 name=$1
 if [[ -v 2 ]]; then
@@ -41,7 +43,7 @@ function ensure_exists() {
         exit 1
     fi
 }
-c_file="./tests/$name.c"
+c_file="$TEST_DIR/$name.c"
 ensure_exists "$c_file"
 
 # Clear output files
@@ -82,16 +84,16 @@ cmd=(
 # If INPUT_NAME was given
 if [[ -v 2 ]]; then 
     input_name="$2"
-    args_file="./tests/$name/${input_name}.args"
+    args_file="$TEST_DIR/$name/${input_name}.args"
     ensure_exists "$args_file"
 
     cmd+=( $(cat "$args_file") )
 
-    fout_file="./tests/$name/${input_name}.fout"
-    stdout_file="./tests/$name/${input_name}.stdout"
+    fout_file="$TEST_DIR/$name/${input_name}.fout"
+    stdout_file="$TEST_DIR/$name/${input_name}.stdout"
 else
-    fout_file="./tests/${name}.fout"
-    stdout_file="./tests/${name}.stdout"
+    fout_file="$TEST_DIR/${name}.fout"
+    stdout_file="$TEST_DIR/${name}.stdout"
 fi
 
 if ! [[ -e "$fout_file" ]]; then
