@@ -34,6 +34,12 @@ function show_diff() {
 function end() {
     code=$1; shift
     show=$1; shift
+    if [[ $show == diff ]]; then
+        show_diff=true
+        dif_file_a=$1; shift
+        dif_file_b=$1; shift
+    fi
+
     msg=$*
     if [[ $code == 0 ]]; then
         pass 
@@ -55,23 +61,15 @@ function end() {
         echo
     fi
 
-    case $show in
-        fout)
-            show_diff "$fout_file" test.fout
-            echo
-            ;;
-        stdout)
-            show_diff "$stdout_file" test.stdout
-            echo
-            ;;
-        make)
-            cat test.make
-            echo
-            ;;
-    esac
+    if [[ $show == diff ]]; then
+        show_diff $diff_file_a $diff_file_b
+        echo
+    elif [[ $show == make ]]; then
+        cat test.make
+        echo 
+    fi
 
     exit $code
-    
 }
 
 function ensure_exists() {
@@ -117,7 +115,7 @@ cmd=(
 if [[ -v test_case ]]; then 
     case_file_format="./tests_$batch_name/$test_name/$test_case"
 else
-    case_file_format=="./tests_$batch_name/$test_name"
+    case_file_format="./tests_$batch_name/$test_name"
 fi
 args_file="$case_file_format.args"
 in_file="$case_file_format.in"
@@ -141,16 +139,29 @@ exitcode=0;
 
 if [[ $code == 0 ]]; then
     # Check stdout
-    if [[ -v stdout_file ]] && ! diff -q "$stdout_file" test.stdout > /dev/null
+    if [[ -v stdout_file ]] && ! diff -q "$stdout_file" test.stdout &> /dev/null
     then
-        end 2 stdout "the standard outputs differ"
+        end 2 diff "$stdout_file" test.stdout "standard outputs differ"
     fi
 
     # Check file output
-    if [[ -v fout_file ]] && ! diff -q "$fout_file" test.fout > /dev/null
+    if [[ -v fout_file ]] && ! diff -q "$fout_file" test.fout &> /dev/null
     then
-        end 2 fout "the file outputs differ"
+        end 2 diff "$fout_file" test.fout "file outputs differ"
     fi
+
+    # Check file output for named fout files
+    shopt -s nullglob 
+    for named_fout_file in ${case_file_format}_*.fout; do
+        fout_name=${named_fout_file#${case_file_format}_}
+        fout_name=${fout_name%.fout}
+
+        if ! diff -q "$named_fout_file" test_$fout_name.fout &> /dev/null
+        then
+            end 2 diff "$named_fout_file" test_$fout_name.fout "named file outputs differ"
+        fi
+    done
+    shopt -u nullglob 
 
     # Check valgrind report
     if [[ -s test.valgrind ]]; then
