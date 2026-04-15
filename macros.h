@@ -62,4 +62,6 @@
 
 #define PRINT_U64(v) printf("%" PRIu64 "\n", v);
 
+#define TEST_FILE(name) "test_" name ".fout"
+
 #endif // TEST_MACROS

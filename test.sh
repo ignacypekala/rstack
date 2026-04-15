@@ -19,7 +19,7 @@ test_name=$2
 [[ -v 3 ]] && test_case=$3
 
 if [[ -v test_case ]]; then
-    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}${test_case}${RESET}"
+    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}${test_case}${RESET} "
 else
     TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${RESET}"
 fi
@@ -65,7 +65,7 @@ function end() {
     else
         fail
     fi
-    echo -e "${TEST_NAME} $msg"
+    echo -e "${TEST_NAME}$msg"
 
     exit $code
 }
@@ -99,15 +99,21 @@ if [[ $compilation_code != 0 ]]; then
 fi
 
 # Craft a command for running the test
-cmd=( 
-    valgrind 
-    --track-origins=$VALGRIND_TRACK_ORIGINS
-    --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all
-    -q
-    --log-file="./test.valgrind" 
-    "./$executable"
+if [[ $VALGRIND == yes ]]; then
+    cmd=( 
+        valgrind 
+        --track-origins=$VALGRIND_TRACK_ORIGINS
+        --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all
+        -q
+        --log-file="./test.valgrind" 
+        "./$executable"
     
-)
+    )
+else
+    cmd=(
+        "./$executable"
+        )
+fi
 
 if [[ -v test_case ]]; then 
     case_file_format="./tests_$batch_name/$test_name/$test_case"
@@ -171,7 +177,7 @@ if [[ $code == 0 ]]; then
         end 3 no "valgrind reported errors"
     fi
 
-    end 0 no "${execution_time}s"
+    end 0 no "${execution_time}s (make: ${compilation_time}s)"
     exit 0
 else
     if [[ $code == 124 ]]; then

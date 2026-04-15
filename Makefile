@@ -3,9 +3,9 @@ CFLAGS = -Wall -Wextra -Wno-implicit-fallthrough -std=gnu23 -fPIC
 LDFLAGS = -shared -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc \
 -Wl,--wrap=reallocarray -Wl,--wrap=free -Wl,--wrap=strdup -Wl,--wrap=strndup
 
-# CFLAGS += -g # REMOVE BEFORE SUBMISSION
-# LDFLAGS += -g # REMOVE BEFORE SUBMISSION
-CFLAGS += -O2 # UNCOMMENT BEFORE SUBMISSION
+CFLAGS += -g # REMOVE BEFORE SUBMISSION
+LDFLAGS += -g # REMOVE BEFORE SUBMISSION
+# CFLAGS += -O2 # UNCOMMENT BEFORE SUBMISSION
 
 .PHONY: clean all
 .PRECIOUS: test_%.o
