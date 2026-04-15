@@ -50,7 +50,7 @@ for test in $batch_dir/*.c; do
                 # mark as handled
                 handled[$case_name]=1
 
-                ${cmd[@]} "$case_name"
+                "${cmd[@]}" "$case_name"
                 register $?
             fi
         done

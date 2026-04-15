@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <sys/types.h>
 
 static const int UINT64_MAX_STRING_LENGTH = 20;
-static const char* UINT64_STRING_FORMAT = "%20s";
 static const size_t RSTACK_INITAL_CAPACITY = 10;
 
 /*
@@ -161,16 +161,85 @@ bool rstack_empty(rstack_t *rs) {
 }
 
 /*
+ * Reads a uint64_t from a file. Returns:
+ * * 0 - success
+ * * -1 - no number found
+ * * -2 - invalid file contents have been detected
+ * * -3 - file stream operation failed
+ * On failure errno is set according to the specification of rstack_read.
+ */
+static int rstack_read_number(FILE *file, uint64_t *number) {
+    char buffer[UINT64_MAX_STRING_LENGTH + 1];
+    int i = 0;
+    int leading_zeros = 0;
+    while (!feof(file) && i < UINT64_MAX_STRING_LENGTH) {
+        int c = fgetc(file);
+        if (feof(file)) {
+            break;
+        } else if (c == EOF) {
+            return -3;
+        }
+
+        if (i == 0 && (c == '0' || isspace(c))) {
+            if (c == '0') leading_zeros++;
+            continue; 
+        } 
+
+        if (isspace(c)) break;
+
+        if (isdigit(c)) {
+            buffer[i++] = (char) c;
+        } else {
+            errno = EBADMSG;
+            return -2;
+        }
+    }
+    // Trailing characters may remain if the buffer was filled
+    if (i == UINT64_MAX_STRING_LENGTH) {
+        int c = getc(file);
+        if (c != EOF) {
+            if (!isspace(c)) {
+                errno = EBADMSG;
+                return -2;
+            }
+            errno = ENOBUFS;
+        }
+        if (c != EOF && ungetc(c, file) == EOF) {
+            return -3;
+        } 
+    }
+    // fprintf(stderr, "%s\n", buffer);
+
+    if (i == 0) {
+        if (leading_zeros > 0) {
+            buffer[i++] = '0';
+        } else {
+            return -1;
+        }
+    }
+
+    buffer[i++] = '\0';
+
+    errno = 0;
+    char *end_ptr = nullptr;
+    *number = (uint64_t) strtoull(buffer, &end_ptr, 10);
+    if (errno == ERANGE) {
+        return -2;
+    }
+    return 0;
+}
+
+/*
  * Reads numerical values from a whitespace-separated text file and
  * populates a new rstack.
  * Returns a pointer to the rstack, or nullptr on failure.
  * Possible errno values:
  *  - EINVAL: path is nullptr.
- *  - EBADMSG: File contains non-whitespace trailing characters or invalid
- *    formatting.
- *  - ERANGE: A value in the file exceeds the range of uint64_t.
- *  - ENOMEM: Memory allocation failed.
- *  And
+ *  - EBADMSG: invalid file contents
+ *  - ERANGE: a value in the file exceeds the range of uint64_t.
+ *  - ENOMEM: memory allocation failed.
+ *  - ENOBUFS: ungetc failed to unget a character to the file descriptor
+ *  And any values specified by the POSIX standard:
  *  https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
  *  https://pubs.opengroup.org/onlinepubs/9699919799/functions/strtoul.html
  */
@@ -181,35 +250,16 @@ rstack_t *rstack_read(char const *path) {
     }
 
     FILE *file = fopen(path, "r");
-    if (file == nullptr) return nullptr;
+    if (file == nullptr) {
+        return nullptr;
+    }
 
     rstack_t *stack = rstack_new();
 
-    // Fscanf additionally writes \0 to the buffer (hence the size discrepancy).
-    char buffer[UINT64_MAX_STRING_LENGTH + 1];
-    while (fscanf(file, UINT64_STRING_FORMAT, buffer) == 1) {
-        // Sequences longer than 20 digits fall out of range of uint64_t.
-        if (!feof(file)) {
-            char trailing_char = fgetc(file);
-            if (!isspace(trailing_char)) {
-                rstack_delete(stack);
-                fclose(file);
-                errno = EBADMSG;
-                return nullptr;
-            } else {
-                ungetc(trailing_char, file);
-            }
-        }
-
-        char *end_ptr = nullptr;
-        errno = 0;
-        uint64_t number = (uint64_t) strtoull(buffer, &end_ptr, 10);
-        if (errno == ERANGE) {
-            rstack_delete(stack);
-            fclose(file);
-            return nullptr;
-        }
-
+    uint64_t number = 0;
+    int code;
+    while (!feof(file) && (code = rstack_read_number(file, &number)) == 0) {
+        // fprintf(stderr, "%d\n", code);
         if (rstack_push_value(stack, number) != 0) {
             rstack_delete(stack);
             fclose(file);
@@ -217,6 +267,11 @@ rstack_t *rstack_read(char const *path) {
         }
     }
     fclose(file);
+    if (code < -1) {
+        // fprintf(stderr, "failed: %d\n", code);
+        rstack_delete(stack);
+        return nullptr;
+    }
     return stack;
 }
 
@@ -231,7 +286,7 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
 
     rstack_container_t *container = rs->as.container;
     if (container->visited) return 1;
-    
+
     container->visited = true;
     int return_code = 0;
 
@@ -277,6 +332,6 @@ int rstack_write(char const *path, rstack_t *rs) {
     int temp_errno = errno;
     fclose(file);
     errno = temp_errno;
-    
+
     return (result == -1) ? -1 : 0;
 }

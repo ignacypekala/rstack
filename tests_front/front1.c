@@ -4,7 +4,7 @@
 
 int main() {
     rstack_t *stack = rstack_new();
-    uint64_t values[5] = {1, INT64_MAX, INT64_MIN, 2, 3};
+    uint64_t values[4] = {1, UINT64_MAX, 2, 3};
     for (int i = 0; i < 5; i++) {
         NO_ERROR(rstack_push_value(stack, values[i]));
     }

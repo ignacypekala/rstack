@@ -15,7 +15,7 @@ if [[ -v 3 ]]; then
 fi
 
 if [[ -v test_case ]]; then
-    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}(${2})${RESET}"
+    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}(${test_case})${RESET}"
 else
     TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${RESET}"
 fi
@@ -46,8 +46,6 @@ function end() {
 
     if [[ $show == diff ]]; then
         show_diff $diff_file_a $diff_file_b
-    elif [[ $show == make ]]; then
-        cat test.make
     fi
 
     if [[ ( $code == 0 || $code == 3 ) && -s test.valgrind ]]; then
@@ -89,7 +87,7 @@ compilation_code=$?
 compilation_time=$SECONDS
 
 if [[ $compilation_code != 0 ]]; then
-    end 1 make "failed to compile"
+    end 1 no "failed to compile"
 fi
 
 # Craft a command for running the test
@@ -113,16 +111,22 @@ in_file="$case_file_format.in"
 fout_file="$case_file_format.fout"
 stdout_file="$case_file_format.stdout"
 
-[[ -e $args_file ]] && cmd+=( $(cat "$args_file") )
-[[ -e $in_file ]] || unset in_file
-[[ -e $fout_file ]] || unset fout_file
-[[ -e $stdout_file ]] || unset stdout_file
+[[ -e "$args_file" ]] && cmd+=( $(cat "$args_file") )
+[[ -e "$in_file" ]] || unset in_file
+[[ -e "$fout_file" ]] || unset fout_file
+[[ -e "$stdout_file" ]] || unset stdout_file
 
 in_file="${in_file:-/dev/stdin}"
+if [[ -v stdout_file ]]; then
+    stdout=test.stdout
+else
+    stdout=/dev/stdout
+fi
+
 
 # run
 SECONDS=0
-LD_LIBRARY_PATH=. timeout 60s "${cmd[@]}" > test.stdout < $in_file
+LD_LIBRARY_PATH=. timeout 60s "${cmd[@]}" > "$stdout" < "$in_file"
 code=$?
 execution_time=$SECONDS
 
@@ -130,9 +134,9 @@ exitcode=0;
 
 if [[ $code == 0 ]]; then
     # Check stdout
-    if [[ -v stdout_file ]] && ! diff -q "$stdout_file" test.stdout &> /dev/null
+    if [[ -v stdout_file ]] && ! diff -q "$stdout_file" "$stdout" &> /dev/null
     then
-        end 2 diff "$stdout_file" test.stdout "standard outputs differ"
+        end 2 diff "$stdout_file" "$stdout" "standard outputs differ"
     fi
 
     # Check file output
