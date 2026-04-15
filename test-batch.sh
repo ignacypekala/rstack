@@ -1,4 +1,6 @@
 #!/bin/bash
+# Configuration:
+COLORS=yes
 
 batch_name=$1
 batch_dir=./tests_${batch_name}
@@ -45,7 +47,7 @@ for test in $batch_dir/*.c; do
             case_name=${case_name%.*}
             case_name=${case_name%_*}
 
-            # case hasnt been handled yet
+            # case hasn't been handled yet
             if [[ -z "${handled[$case_name]}" ]]; then
                 # mark as handled
                 handled[$case_name]=1
@@ -62,10 +64,12 @@ for test in $batch_dir/*.c; do
 done
 shopt -u nullglob 
 
-RED="\e[31m"
-GREEN='\e[32m'
-YELLOW='\e[33m'
-RESET='\e[0m' 
+if [[ $COLORS == yes ]]; then
+    RED="\e[31m"
+    GREEN='\e[32m'
+    YELLOW='\e[33m'
+    RESET='\e[0m' 
+fi
 echo
 echo -en "${RESET}Summary: "
 echo -en "${GREEN}${passed}${RESET} passed"

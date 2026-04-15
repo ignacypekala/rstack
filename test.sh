@@ -1,21 +1,25 @@
 #!/bin/bash
-BG_RED_BLACK='\e[1;38;5;0;48;5;1m'
-BG_GREEN_BLACK='\e[1;38;5;0;48;5;2m'
-BG_YELLOW_BLACK='\e[1;38;5;0;48;5;3m'
-BOLD_WHITE='\e[1;97m'
-WHITE='\e[97m'
-RESET='\e[0m'
-
+# Configuration:
+COLORS=yes
+COMPILE=yes
+VALGRIND=yes
 VALGRIND_TRACK_ORIGINS=yes
+
+if [[ $COLORS == yes ]]; then
+    BG_RED_BLACK='\e[1;38;5;0;48;5;1m'
+    BG_GREEN_BLACK='\e[1;38;5;0;48;5;2m'
+    BG_YELLOW_BLACK='\e[1;38;5;0;48;5;3m'
+    BOLD_WHITE='\e[1;97m'
+    WHITE='\e[97m'
+    RESET='\e[0m'
+fi
 
 batch_name=$1
 test_name=$2
-if [[ -v 3 ]]; then
-    test_case=$3
-fi
+[[ -v 3 ]] && test_case=$3
 
 if [[ -v test_case ]]; then
-    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}(${test_case})${RESET}"
+    TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${WHITE}${test_case}${RESET}"
 else
     TEST_NAME="${BOLD_WHITE}tests_${batch_name}/${test_name} ${RESET}"
 fi
@@ -29,23 +33,24 @@ function warn() {
     echo -ne "${BG_YELLOW_BLACK} WARN ${RESET} "
 }
 
-function show_diff() {
-    diff -u --color "$1" "$2"
+function run_diff() {
+    if [[ $COLORS == yes ]]; then
+        color=always
+    else
+        color=never
+    fi
+
+    diff -u --color=always "$1" "$2" > test.diff
+    return $?
 }
 
 function end() {
     code=$1; shift
     show=$1; shift
-    if [[ $show == diff ]]; then
-        show_diff=true
-        dif_file_a=$1; shift
-        dif_file_b=$1; shift
-    fi
-
     msg=$*
 
     if [[ $show == diff ]]; then
-        show_diff $diff_file_a $diff_file_b
+        cat test.diff
     fi
 
     if [[ ( $code == 0 || $code == 3 ) && -s test.valgrind ]]; then
@@ -77,14 +82,17 @@ ensure_exists "$c_file"
 > test.fout
 > test.stdout
 > test.valgrind
+> test.diff
 
 executable="test_${test_name}_executable"
 
-# compile
-SECONDS=0
-TEST_BATCH=$batch_name make "$executable" -s
-compilation_code=$?
-compilation_time=$SECONDS
+if [[ $COMPILE == yes ]]; then
+    SECONDS=0
+    TEST_BATCH=$batch_name make "$executable" -s
+    compilation_code=$?
+    compilation_time=$SECONDS
+fi
+
 
 if [[ $compilation_code != 0 ]]; then
     end 1 no "failed to compile"
@@ -134,15 +142,15 @@ exitcode=0;
 
 if [[ $code == 0 ]]; then
     # Check stdout
-    if [[ -v stdout_file ]] && ! diff -q "$stdout_file" "$stdout" &> /dev/null
+    if [[ -v stdout_file ]] && ! run_diff "$stdout_file" "$stdout"
     then
-        end 2 diff "$stdout_file" "$stdout" "standard outputs differ"
+        end 2 diff "standard outputs differ"
     fi
 
     # Check file output
-    if [[ -v fout_file ]] && ! diff -q "$fout_file" test.fout &> /dev/null
+    if [[ -v fout_file ]] && ! run_diff "$fout_file" test.fout
     then
-        end 2 diff "$fout_file" test.fout "file outputs differ"
+        end 2 diff "file outputs differ"
     fi
 
     # Check file output for named fout files
@@ -151,9 +159,9 @@ if [[ $code == 0 ]]; then
         fout_name=${named_fout_file#${case_file_format}_}
         fout_name=${fout_name%.fout}
 
-        if ! diff -q "$named_fout_file" test_$fout_name.fout &> /dev/null
+        if ! run_diff "$named_fout_file" test_$fout_name.fout
         then
-            end 2 diff "$named_fout_file" test_$fout_name.fout "named file outputs differ"
+            end 2 diff "named file outputs differ"
         fi
     done
     shopt -u nullglob 

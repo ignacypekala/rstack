@@ -5,12 +5,12 @@
 int main() {
     rstack_t *stack = rstack_new();
     uint64_t values[4] = {1, UINT64_MAX, 2, 3};
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         NO_ERROR(rstack_push_value(stack, values[i]));
     }
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         result_t front = rstack_front(stack);
-        ASSERT_RESULT(front, true, values[5 - i - 1]);
+        ASSERT_RESULT(front, true, values[4 - i - 1]);
         rstack_pop(stack);
     }
     ASSERT_RESULT(rstack_front(stack), false);

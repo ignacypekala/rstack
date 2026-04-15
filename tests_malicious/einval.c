@@ -42,5 +42,4 @@ int main() {
     ASSERT(rstack_write(dummy_test_file, nullptr) == -1);
     ASSERT(errno != 0);
     remove(dummy_test_file);
-
 }
