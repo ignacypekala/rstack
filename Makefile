@@ -19,7 +19,7 @@ rstack_%: rstack_%.o librstack.so
 
 TEST_BATCH ?= test
 test_%.o: ./tests_$(TEST_BATCH)/%.c macros.h
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) -I tests -c $< -o $@ $(CFLAGS)
 test_%_executable: test_%.o librstack.so
 	$(CC) $^ -o $@ -L . -lrstack
 
@@ -28,4 +28,5 @@ test_%_executable: test_%.o librstack.so
 
 clean:
 	rm -f *.o a.out rstack_example librstack.so 
-	rm -f test.fout test_*.fout test.stdout test.valgrind test.make test.stderr test_*_executable test_*.o
+	rm -f test_*.fout test_*_executable test_*.o test.fout  test.diff \
+	test.stdout test.valgrind test.make

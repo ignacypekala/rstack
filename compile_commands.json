@@ -54,21 +54,21 @@
     "output": "rstack_container.o"
   },
   {
-    "file": "rstack_example.c",
+    "file": "rstack_delete.c",
     "arguments": [
       "/usr/sbin/gcc",
+      "-c",
+      "rstack_delete.c",
+      "-o",
+      "rstack_delete.o",
       "-Wall",
       "-Wextra",
       "-Wno-implicit-fallthrough",
       "-std=gnu23",
       "-fPIC",
-      "-g",
-      "-c",
-      "-o",
-      "rstack_example.o",
-      "rstack_example.c"
+      "-g"
     ],
     "directory": "/home/user/laby/akso/rstack",
-    "output": "rstack_example.o"
+    "output": "rstack_delete.o"
   }
 ]

@@ -3,9 +3,11 @@ compile-commands.json
 **/*.so
 rstack_example
 a.out
-test_*
+test_*.fout
+test_*_executable
+test_*.o
 test.fout
+test.diff
 test.stdout
 test.valgrind
-test.stderr
 test.make

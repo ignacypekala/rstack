@@ -1,0 +1,1 @@
+tests/test-all.sh
