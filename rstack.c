@@ -118,9 +118,9 @@ void rstack_pop(rstack_t *rs) {
 }
 
 /*
- * Recursively searches for the topmost numerical value in the stack.
- * Uses a 'visited' flag to prevent infinite loops in cyclic structures.
- * Returns a result_t with flag=true if a value is found.
+ * Internal helper to recursively search for the topmost numerical value
+ * in the stack container. Uses dfs_ flags to handle cyclic structures and
+ * prevent infinite loops. Returns a result_t.
  */
 static result_t rstack_front_traverser(rstack_t *stack) {
     result_t t = { .flag = false, .value = 0 };
@@ -146,7 +146,8 @@ static result_t rstack_front_traverser(rstack_t *stack) {
 }
 
 /*
- * Resets the "dfs_visited" flag of a stack and recursively for all of its descendants.
+ * Internal helper to recursively clear the "dfs_visited" flag on a stack
+ * and all of its nested container elements after a traversal completes.
  */
 static void rstack_reset_visited(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
@@ -161,6 +162,11 @@ static void rstack_reset_visited(rstack_t *stack) {
     }
 }
 
+/*
+ * Retrieves the topmost numerical value from the stack.
+ * Returns a result_t with the flag set to true and the corresponding value
+ * on success, or flag set to false if the stack is empty or nullptr.
+ */
 result_t rstack_front(rstack_t *rs) {
     result_t t = { .flag = false, .value = 0 };
     if (rs == nullptr) return t;
