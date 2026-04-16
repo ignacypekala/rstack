@@ -22,3 +22,21 @@ Obsolete incldues were remvoed
 1s and 0s were changed to true and false
 %s/ASSERT_RESULT(\(.\+, \)1,/ASSERT_RESULT(\1true,/g
 %s/ASSERT_RESULT(\(.\+, \)0)/ASSERT_RESULT(\1false)/g
+
+
+:%s/tests\/output\/test..\?\(_.\+\)\.result\.out/test\1.fout
+:%s/int test..\?(/int main(/
+:%s/CHECK_IF_NO_ERROR/NO_ERROR/g
+/#undefV33jxdd
+goi#include "../macros.h"/rstacki../:w
+/stdiodj:w
+:%s/ASSERT_RESULT(\(.\+, \)1,/ASSERT_RESULT(\1true,/g
+:%s/ASSERT_RESULT(\(.\+, \)0)/ASSERT_RESULT(\1false)/g
+gg
+
+gg
+/int main
+jvi{>
+gg
+
+
