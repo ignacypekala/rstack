@@ -20,7 +20,8 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
     container->size = 0;
     container->capacity = initial_capacity;
     container->references = 1;
-    container->visited = false;
+    container->dfs_visiting = false;
+    container->dfs_visited = false;
     container->gc_state = NORMAL;
     container->gc_next = nullptr;
 

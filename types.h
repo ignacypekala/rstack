@@ -29,12 +29,12 @@ typedef struct {
     size_t               size;
     size_t               capacity;
     uint64_t             references;
-    bool                 visited;
-    enum rstack_gc_state gc_state;
 
-    // Intrusive list pointer used to queue unreachable nodes during garbage
-    // collection
-    rstack_t            *gc_next;
+    bool                 dfs_visiting;
+    bool                 dfs_visited;
+
+    enum rstack_gc_state gc_state;
+    rstack_t            *gc_next; // intrusive linked list
 } rstack_container_t;
 
 enum rstack_type { 

@@ -122,13 +122,12 @@ void rstack_pop(rstack_t *rs) {
  * Uses a 'visited' flag to prevent infinite loops in cyclic structures.
  * Returns a result_t with flag=true if a value is found.
  */
-result_t rstack_front(rstack_t *rs) {
+static result_t rstack_front_traverser(rstack_t *stack) {
     result_t t = { .flag = false, .value = 0 };
-    if (rs == nullptr) return t;
 
-    rstack_container_t *container = rs->as.container;
-    if (container->visited) return t;
-    container->visited = true;
+    rstack_container_t *container = stack->as.container;
+    if (container->dfs_visiting || container->dfs_visited) return t;
+    container->dfs_visiting = true;
 
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *element = container->array[container->size - i - 1];
@@ -137,12 +136,37 @@ result_t rstack_front(rstack_t *rs) {
             t.value = element->as.number;
             break;
         } else {
-            t = rstack_front(element);
+            t = rstack_front_traverser(element);
             if (t.flag) break;
         }
     }
+    container->dfs_visited = true;
+    container->dfs_visiting = false;
+    return t;
+}
 
-    container->visited = false;
+/*
+ * Resets the "dfs_visited" flag of a stack and recursively for all of its descendants.
+ */
+static void rstack_reset_visited(rstack_t *stack) {
+    rstack_container_t *container = stack->as.container;
+    if (!container->dfs_visited) return;
+    container->dfs_visited = false;
+
+    for (size_t i = 0; i < container->size; i++) {
+        rstack_t *element = container->array[i];
+        if (element->type == CONTAINER) {
+            rstack_reset_visited(element);
+        }
+    }
+}
+
+result_t rstack_front(rstack_t *rs) {
+    result_t t = { .flag = false, .value = 0 };
+    if (rs == nullptr) return t;
+
+    t = rstack_front_traverser(rs);
+    rstack_reset_visited(rs);
     return t;
 }
 
@@ -166,9 +190,9 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
     if (rs == nullptr) return 0;
 
     rstack_container_t *container = rs->as.container;
-    if (container->visited) return 1;
+    if (container->dfs_visiting) return 1;
 
-    container->visited = true;
+    container->dfs_visiting = true;
     int return_code = 0;
 
     for (size_t i = 0; i < container->size; i++) {
@@ -185,7 +209,7 @@ int rstack_write_helper(FILE *file, rstack_t *rs) {
         }
     }
 
-    container->visited = false;
+    container->dfs_visiting = false;
     return return_code;
 }
 
