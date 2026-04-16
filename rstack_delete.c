@@ -22,7 +22,7 @@
 static void gc_simulate_deletion(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
 
-    container->state = UNDER_TRIAL;
+    container->gc_state = UNDER_TRIAL;
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *element = container->array[i];
 
@@ -30,7 +30,7 @@ static void gc_simulate_deletion(rstack_t *stack) {
             rstack_container_t *element_container = element->as.container;
 
             element_container->references--;
-            if (element_container->state != UNDER_TRIAL) {
+            if (element_container->gc_state != UNDER_TRIAL) {
                 gc_simulate_deletion(element);
             }
         }
@@ -46,7 +46,7 @@ static void gc_simulate_deletion(rstack_t *stack) {
  */
 static void gc_rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
-    container->state = RESCUED;
+    container->gc_state = RESCUED;
 
     for (size_t i = 0; i < container->size; i++) {
         rstack_t *element = container->array[i];
@@ -55,7 +55,7 @@ static void gc_rescue(rstack_t *stack) {
             rstack_container_t *element_container = element->as.container;
             element_container->references++;
 
-            if (element_container->state != RESCUED) {
+            if (element_container->gc_state != RESCUED) {
                 gc_rescue(element);
             }
         }
@@ -70,12 +70,12 @@ static void gc_rescue(rstack_t *stack) {
 static void gc_scan_for_rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
 
-    if (container->state != UNDER_TRIAL) return;
+    if (container->gc_state != UNDER_TRIAL) return;
 
     if (container->references > 0) {
         gc_rescue(stack);
     } else {
-        container->state = PROVISIONALLY_DEAD;
+        container->gc_state = PROVISIONALLY_DEAD;
         for (size_t i = 0; i < container->size; i++) {
             rstack_t *element = container->array[i];
 
@@ -94,8 +94,8 @@ static void gc_scan_for_rescue(rstack_t *stack) {
 static void gc_resurrect_rescued(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
     
-    if (container->state == RESCUED) {
-        container->state = NORMAL;
+    if (container->gc_state == RESCUED) {
+        container->gc_state = NORMAL;
         for (size_t i = 0; i < container->size; i++) {
             rstack_t *element = stack->as.container->array[i];
 
@@ -117,8 +117,8 @@ static void gc_resurrect_rescued(rstack_t *stack) {
 static void gc_mark_dead(rstack_t *stack, rstack_t **head) {
     rstack_container_t *container = stack->as.container;
 
-    if (container->state == PROVISIONALLY_DEAD) {
-        container->state = DEAD;
+    if (container->gc_state == PROVISIONALLY_DEAD) {
+        container->gc_state = DEAD;
 
         (*head)->as.container->gc_next = stack;
         *head = stack;

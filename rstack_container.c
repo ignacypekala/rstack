@@ -21,7 +21,7 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
     container->capacity = initial_capacity;
     container->references = 1;
     container->visited = false;
-    container->state = NORMAL;
+    container->gc_state = NORMAL;
     container->gc_next = nullptr;
 
     container->array = malloc(sizeof(rstack_t *) * container->capacity);
