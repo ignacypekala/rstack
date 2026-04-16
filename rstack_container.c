@@ -7,8 +7,11 @@
 
 #define ARRAY_GROWTH_FACTOR 2
 
-// Initialises an rstack_container_t.
-// Assumes initial_capacity > 0. Returns a nullptr on allocation failure.
+/*
+ * Initializes an rstack_container_t and it's internal storage. Assumes
+ * initial_capacity > 0. Returns a pointer to the newly allocated container, or
+ * nullptr on allocation failure.
+ */
 rstack_container_t *init_rstack_container(size_t initial_capacity) {
     rstack_container_t *container = malloc(sizeof(rstack_container_t));
     if (container == nullptr) {
@@ -29,10 +32,13 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
     return container;
 }
 
-// Pushes an rstack_t to the array of an rstack_container_t.
-// On insufficient space, reallocates the array with a capacity multiplied by
-// the ARRAY_GROWTH_FACTOR. Returns 0 on success, -1 in case of reallocation
-// failure (the original pointer is left intact).
+/*
+ * Pushes an rstack_t object onto the internal array of the container.
+ * If the current capacity is reached, the array is dynamically expanded
+ * by a factor of ARRAY_GROWTH_FACTOR.
+ * Returns 0 on success, or -1 if reallocation fails (in which case the
+ * original array pointer is left intact).
+ */
 int rstack_container_push(rstack_container_t *container, rstack_t *rs) {
     if (container->size == container->capacity) {
         container->capacity *= ARRAY_GROWTH_FACTOR;

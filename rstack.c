@@ -2,18 +2,11 @@
 #include "rstack_container.h"
 #include "rstack_delete.h"
 #include "types.h"
-#include <asm-generic/errno-base.h>
-#include <asm-generic/errno.h>
-#include <ctype.h>
 #include <errno.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <sys/types.h>
 
-static const int UINT64_MAX_STRING_LENGTH = 20;
 static const size_t RSTACK_INITAL_CAPACITY = 10;
 
 /*
@@ -162,118 +155,6 @@ bool rstack_empty(rstack_t *rs) {
     return !t.flag;
 }
 
-/*
- * Reads a uint64_t from a file. Returns:
- * * 0 - success
- * * -1 - no number found
- * * -2 - invalid file contents have been detected
- * * -3 - file stream operation failed
- * On failure errno is set according to the specification of rstack_read.
- */
-static int rstack_read_number(FILE *file, uint64_t *number) {
-    char buffer[UINT64_MAX_STRING_LENGTH + 1];
-    int character;
-    int written_chars = 0;
-    bool leading_zero = false;
-    while ((character = fgetc(file)) != EOF) {
-        if (written_chars == 0 && character == '0') {
-            leading_zero = true;
-            continue;
-        }
-        if (!leading_zero && written_chars == 0) {
-            if (isspace(character)) continue;
-        } else if (isspace(character)) {
-            break;
-        }
-
-        if (isdigit(character)) {
-            buffer[written_chars++] = (char) character;
-        } else {
-            errno = EBADMSG;
-            return -2;
-        }
-    }
-
-    if (character == EOF) {
-        if (ferror(file)) {
-            errno = EIO;
-            return -3;
-        }
-    } else {
-        if (written_chars == UINT64_MAX_STRING_LENGTH) {
-            if (!isspace(character)) {
-                errno = isdigit(character) ? ERANGE : EBADMSG;
-                return -2;
-            }
-        }
-        if (ungetc(character, file) == EOF) {
-            errno = EIO;
-            return -3;
-        };
-    }
-
-    if (written_chars == 0)  {
-        if (leading_zero) {
-            buffer[written_chars++] = '0';
-        } else {
-            return -1;
-        }
-    }
-
-    buffer[written_chars++] = '\0';
-    errno = 0;
-    char *end_ptr = nullptr;
-    *number = (uint64_t) strtoull(buffer, &end_ptr, 10);
-    if (errno == ERANGE) {
-        return -2;
-    }
-    return 0; 
-
-}
-
-/*
- * Reads numerical values from a whitespace-separated text file and
- * populates a new rstack.
- * Returns a pointer to the rstack, or nullptr on failure.
- * Possible errno values:
- *  - EINVAL: path is nullptr.
- *  - EBADMSG: invalid file contents
- *  - ERANGE: a value in the file exceeds the range of uint64_t.
- *  - ENOMEM: memory allocation failed.
- *  - EIO: file reading failed
- *  And any values specified by the POSIX standard:
- *  https://pubs.opengroup.org/onlinepubs/9699919799/functions/fopen.html
- *  https://pubs.opengroup.org/onlinepubs/9699919799/functions/strtoul.html
- */
-rstack_t *rstack_read(char const *path) {
-    if (path == nullptr) {
-        errno = EINVAL;
-        return nullptr;
-    }
-
-    FILE *file = fopen(path, "r");
-    if (file == nullptr) {
-        return nullptr;
-    }
-
-    rstack_t *stack = rstack_new();
-
-    uint64_t number = 0;
-    int code;
-    while (!feof(file) && (code = rstack_read_number(file, &number)) == 0) {
-        if (rstack_push_value(stack, number) != 0) {
-            rstack_delete(stack);
-            fclose(file);
-            return nullptr;
-        }
-    }
-    fclose(file);
-    if (code < -1) {
-        rstack_delete(stack);
-        return nullptr;
-    }
-    return stack;
-}
 
 /*
  * Recursive helper for writing stack contents to a file.

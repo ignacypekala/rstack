@@ -11,7 +11,8 @@ LDFLAGS += -g # REMOVE BEFORE SUBMISSION
 .PRECIOUS: test_%.o
 all: librstack.so
 
-librstack.so: rstack.o memory_tests.o rstack_container.o rstack_delete.o
+librstack.so: rstack.o memory_tests.o rstack_container.o rstack_delete.o \
+rstack_read.o
 	$(CC) $^ -o $@ $(LDFLAGS) 
 
 rstack_%: rstack_%.o librstack.so

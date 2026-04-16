@@ -8,10 +8,9 @@
 #ifndef RSTACK_TYPES
 #define RSTACK_TYPES
 
-#include <stddef.h>
-#include <inttypes.h>
 #include "rstack.h"
-
+#include <inttypes.h>
+#include <stddef.h>
 
 // Represents the lifecycle state of a node during trial deletion. 
 // It is the equivalent of a color in the Bacon/Rajan trial deletion algorithm.
@@ -22,6 +21,8 @@ enum rstack_gc_state {
     PROVISIONALLY_DEAD,
     DEAD
 };
+
+typedef struct rstack rstack_t;
 
 typedef struct {
     rstack_t           **array;
