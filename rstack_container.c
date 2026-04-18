@@ -3,6 +3,7 @@
  */
 #include "rstack_container.h"
 #include "types.h"
+#include <stdint.h>
 #include <stdlib.h>
 
 #define ARRAY_GROWTH_FACTOR 2
@@ -42,12 +43,19 @@ rstack_container_t *init_rstack_container(size_t initial_capacity) {
  */
 int rstack_container_push(rstack_container_t *container, rstack_t *rs) {
     if (container->size == container->capacity) {
-        container->capacity *= ARRAY_GROWTH_FACTOR;
-        rstack_t **new_pointer =
-          realloc(container->array, sizeof(rstack_t *) * container->capacity);
-        if (new_pointer == nullptr) {
-            return -1;
+        size_t new_capacity, capacity = container->capacity;
+        if (capacity == SIZE_MAX) return -1;
+        if (capacity <= SIZE_MAX / ARRAY_GROWTH_FACTOR) {
+            new_capacity = capacity * ARRAY_GROWTH_FACTOR;
+        } else {
+            new_capacity = SIZE_MAX;
         }
+
+        rstack_t **new_pointer =
+          realloc(container->array, sizeof(rstack_t *) * new_capacity);
+        if (new_pointer == nullptr) return -1;
+
+        container->capacity = new_capacity;
         container->array = new_pointer;
     }
     container->array[container->size++] = rs;
