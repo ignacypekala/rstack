@@ -12,7 +12,7 @@
       "-Wno-implicit-fallthrough",
       "-std=gnu23",
       "-fPIC",
-      "-g"
+      "-O3"
     ],
     "directory": "/home/user/laby/akso/rstack",
     "output": "rstack.o"
@@ -30,7 +30,7 @@
       "-Wno-implicit-fallthrough",
       "-std=gnu23",
       "-fPIC",
-      "-g"
+      "-O3"
     ],
     "directory": "/home/user/laby/akso/rstack",
     "output": "memory_tests.o"
@@ -48,7 +48,7 @@
       "-Wno-implicit-fallthrough",
       "-std=gnu23",
       "-fPIC",
-      "-g"
+      "-O3"
     ],
     "directory": "/home/user/laby/akso/rstack",
     "output": "rstack_container.o"
@@ -66,9 +66,27 @@
       "-Wno-implicit-fallthrough",
       "-std=gnu23",
       "-fPIC",
-      "-g"
+      "-O3"
     ],
     "directory": "/home/user/laby/akso/rstack",
     "output": "rstack_delete.o"
+  },
+  {
+    "file": "rstack_read.c",
+    "arguments": [
+      "/usr/sbin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wno-implicit-fallthrough",
+      "-std=gnu23",
+      "-fPIC",
+      "-O3",
+      "-c",
+      "-o",
+      "rstack_read.o",
+      "rstack_read.c"
+    ],
+    "directory": "/home/user/laby/akso/rstack",
+    "output": "rstack_read.o"
   }
 ]
