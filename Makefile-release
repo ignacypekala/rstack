@@ -13,7 +13,10 @@ rstack_read.o
 rstack_%: rstack_%.o librstack.so
 	$(CC) $^ -o $@ -L . -l rstack -Wl,-rpath,'.'
 
-%.o: %.c %.h
+%.o: %.c %.h types.h
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+%.o: %.c types.h
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 clean:

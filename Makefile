@@ -25,7 +25,10 @@ test_%_executable: test_%.o librstack.so
 	$(CC) $^ -o $@ -L . -lrstack
 # ========================
 
-%.o: %.c %.h
+%.o: %.c %.h types.h
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+%.o: %.c types.h
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 clean:
