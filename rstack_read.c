@@ -1,5 +1,5 @@
 /*
- * Implements rstack_read
+ * Implements rstack_read.
  */
 #include "types.h"
 #include <stdlib.h>

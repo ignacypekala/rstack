@@ -1,5 +1,5 @@
 /*
- * Implements functions for creation and management of rstack containers
+ * Implements functions for creation and management of rstack containers.
  */
 #include "rstack_container.h"
 #include "types.h"
@@ -9,7 +9,7 @@
 #define ARRAY_GROWTH_FACTOR 2
 
 /*
- * Initializes an rstack_container_t and it's internal storage. Assumes
+ * Initializes an rstack_container_t and its internal storage. Assumes
  * initial_capacity > 0. Returns a pointer to the newly allocated container, or
  * nullptr on allocation failure.
  */

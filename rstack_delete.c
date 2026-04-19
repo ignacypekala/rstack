@@ -64,8 +64,8 @@ static void gc_rescue(rstack_t *stack) {
 
 /*
  * Traverses through the graph in search of stacks with a positive reference
- * counter, those are rescued, while all the unrescued ones receive a state of
- * PROVISIONALLY_DEAD (as rescue missions may overwite this).
+ * counter. Those are rescued, while all the unrescued ones receive a state of
+ * PROVISIONALLY_DEAD (as rescue missions may overwrite this).
  */
 static void gc_scan_for_rescue(rstack_t *stack) {
     rstack_container_t *container = stack->as.container;
