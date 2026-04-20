@@ -1,3 +1,8 @@
+/*
+ * Implements functions for operations on recurrent stacks.
+ * Author: Ignacy Pękała
+ */
+
 #include "rstack.h"
 #include "rstack_container.h"
 #include "rstack_delete.h"
