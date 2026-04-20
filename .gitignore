@@ -1,4 +1,4 @@
-compile-commands.json
+compile_commands.json
 **/*.o
 **/*.so
 rstack_example
@@ -11,3 +11,5 @@ test.diff
 test.stdout
 test.valgrind
 test.make
+rstack/
+rstack.tgz
