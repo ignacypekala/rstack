@@ -16,6 +16,7 @@ rstack_%: rstack_%.o librstack.so
 %.o: %.c %.h types.h
 	$(CC) -c $< -o $@ $(CFLAGS)
 
+# Fallback goal for modules with no header file
 %.o: %.c types.h
 	$(CC) -c $< -o $@ $(CFLAGS)
 
