@@ -132,7 +132,7 @@ rstack_t *rstack_read(char const *path) {
         return nullptr;
     }
 
-    FILE *file = fopen(path, "r");
+    FILE *file = fopen(path, "r+");
     if (file == nullptr) {
         return nullptr;
     }
