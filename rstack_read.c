@@ -46,7 +46,7 @@ static int rstack_load_digits_to_buffer(
         } else if (isspace(character)) {
             break;
         } else {
-            errno = EBADMSG;
+            errno = EINVAL;
             return -2;
         }
         character = fgetc(file);
@@ -54,7 +54,7 @@ static int rstack_load_digits_to_buffer(
 
     const bool buffer_full = written_chars == UINT64_MAX_STRING_LENGTH;
     if (character != EOF && buffer_full && !isspace(character)) {
-        errno = isdigit(character) ? ERANGE : EBADMSG;
+        errno = isdigit(character) ? ERANGE : EINVAL;
         return -2;
     }
 
