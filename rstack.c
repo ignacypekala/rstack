@@ -1,5 +1,5 @@
 /*
- * Implements functions for operations on recurrent stacks.
+ * Implements functions for operations on recursive stacks.
  * Author: Ignacy Pękała
  */
 
