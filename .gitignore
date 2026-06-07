@@ -13,3 +13,10 @@ test.valgrind
 test.make
 rstack/
 rstack.tgz
+
+file_one.out
+file_two.out
+file_three.out
+file_four.out
+file_five.out
+file_memory.out
