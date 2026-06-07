@@ -2,30 +2,10 @@
 ![podgląd](./preview.png)
 
 ## Instalacja:
-1. Wszystkie pliki umieść w korzeniu swojego projektu
-> Oczywiście można pominąć README.md oraz preview.png
-2. Do swojego makefile'a dopisz następujące cele
+Sklonuj to repozytorium w podkatalogu w korzeniu swojego projektu:
 ```
-TEST_BATCH ?= test
-test_%.o: ./tests_$(TEST_BATCH)/%.c macros.h
-	gcc -c $< -o $@ $(CFLAGS)
-test_%_executable: test_%.o librstack.so
-	gcc $^ -o $@ -L . -lrstack
+git clone https://github.com/ignacypekala/rstack_tests ./rstack_tests
 ```
-> W zmiennej CFLAGS powinny się znajdować flagi to kompilacji programu
-> (przynajmniej -std=gnu23))
-
-3. Zachęcam do uwzględnienia następujących plików w celu `clean` oraz
-   pliku `.gitignore`:
-```
-test_*.fout test_*_executable test_*.o test.fout
-test.diff test.stdout test.valgrind test.make
-```
-
-> Zamiast kroku pierwszego można sklonować repozytorium i zlinkować pliki
-> programem gnu stow
-> (komenda: `stow ŚCIEŻKA_DO_TESTOW -t ŚCIEŻKA_DO_PROJEKTU`)
-> Następnie w celu `test_%.o` należy dopisać "-I ŚCIEŻKA_DO_TESTÓW/jakiś_folder").
 
 # Użycie
 Aby uruchomić wszystkie testy:
@@ -77,8 +57,7 @@ Ponadto przypadek może także generować dowolną liczbę nazwanych plików wyn
 # Autorzy testów
 - tests_michal_bak - Michał Bąk
 - tests_example - testy dołączone do treści zadania
-
-Pozostałe testy zostały napisane przeze mnie - Ignacego Pękałę.
+- pozostałe - Ignacy Pękała
 
 # Contributing
 Zachęcam do dzielenia się swoimi testami oraz zgłaszania wszelkich usterek.
