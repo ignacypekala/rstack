@@ -18,12 +18,12 @@ F. Bacon and V.T. Rajan (ECOOP 2001).
 
 - `bool      rstack_empty(rstack_t *rs)`:
 
-    Whether the stack contains a numeric value.
+    Whether the stack is empty (does not contain a numeric value at the top).
 
 - `void      rstack_delete(rstack_t *rs)`:
 
     Decrements the stack's reference counter, freeing the orphaned objects
-    recursively. Performs trial deletion to eliminate cyclic grabage.
+    recursively. Performs trial deletion to eliminate cyclic garbage.
 
 
 - `result_t  rstack_front(rstack_t *rs)`:
@@ -54,8 +54,8 @@ cd tests
 ```
 
 ## Attribution
-The project was originally developed for AKSO (Computer architecture and
-operating systems) course at MIMUW (Faculty of Mathematics, Informatics and
+The project was originally developed for AKSO (Computer Architecture and
+Operating Systems) course at MIMUW (Faculty of Mathematics, Informatics and
 Mechanics of University of Warsaw).
 
 All of the code, apart from:
@@ -64,4 +64,4 @@ All of the code, apart from:
 
 - files outlined in `tests/README.md` as vendored
 
-are my original work.
+is my original work.
