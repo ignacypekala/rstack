@@ -19,16 +19,8 @@ librstack.so: $(LIB_OBJS)
 rstack_%: rstack_%.o librstack.so
 	$(CC) $^ -o $@ -L . -l rstack -Wl,-rpath,'.'
 
-TEST_BATCH ?= test
-test_%.o: ./tests_$(TEST_BATCH)/%.c macros.h
-	$(CC) -I tests -c $< -o $@ $(CFLAGS)
-test_%_executable: test_%.o librstack.so
-	$(CC) $^ -o $@ -L . -lrstack
-
 %.o: %.c 
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
 	rm -f src/*.o provided/*.o rstack_example librstack.so 
-	rm -f test_*.fout test_*_executable test_*.o test.fout  test.diff \
-	test.stdout test.valgrind test.make
