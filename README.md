@@ -60,8 +60,8 @@ Mechanics of University of Warsaw).
 
 All of the code, apart from:
 
-    - files provided in the assignment located under `provided/`,
+- files provided in the assignment located under `provided/`,
 
-    - files outlined in `tests/README.md` as vendored
+- files outlined in `tests/README.md` as vendored
 
 are my original work.
