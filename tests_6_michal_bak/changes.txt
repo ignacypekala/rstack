@@ -1,0 +1,28 @@
+Output files have been moved to their corresponding direcotries and renamed.
+
+All of the c files have undergone the following edits:
+
+All output filenames where replaced with test_NN.fout
+:%s/tests\/output\/test..\?\(_.\+\)\.result\.out/test\1.fout
+
+testNN function was renamed to main
+:%s/int test..\?(/int main(/
+
+CHECK_IF_NO_ERROR has been replaced with an alias NO_ERROR
+:%s/CHECK_IF_NO_ERROR/NO_ERROR/g
+
+Macros were removed
+/#undefV33jxdd
+
+macros.h was included and rstack had it's path corrected
+goi#include "../macros.h"/rstacki../:w
+
+Obsolete incldues were remvoed
+/stdiodj:w
+
+
+1s and 0s were changed to true and false
+%s/ASSERT_RESULT(\(.\+, \)1,/ASSERT_RESULT(\1true,/g
+%s/ASSERT_RESULT(\(.\+, \)0)/ASSERT_RESULT(\1false)/g
+
+
