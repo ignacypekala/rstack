@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 for batch in ./tests_*/; do
     batch_name=${batch#./tests_}
