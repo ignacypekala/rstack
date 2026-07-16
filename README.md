@@ -2,52 +2,54 @@
 A C library for operations on recursive stacks - stacks capable of holding
 unsigned 64-bit integers and other stacks.
 
-Handles cyclic garbage with trial deletion based heavily on an algorithm
-featured in "Concurrent Cycle Collection in Reference Counted Systems" by David
-F. Bacon and V.T. Rajan (ECOOP 2001).
+Handles cyclic garbage with a trial deletion approach based heavily on an 
+algorithm featured in "Concurrent Cycle Collection in Reference Counted
+Systems" by David F. Bacon and V.T. Rajan (ECOOP 2001).
 
 ## Supported Operations
 
-- `rstack_t* rstack_new()`
+```c
+rstack_t* rstack_new();
 
-- `int       rstack_push_value(rstack_t *rs, uint64_t value)`
+int       rstack_push_value(rstack_t *rs, uint64_t value);
 
-- `int       rstack_push_rstack(rstack_t *rs1, rstack_t *rs2)`
+int       rstack_push_rstack(rstack_t *rs1, rstack_t *rs2);
 
-- `void      rstack_pop(rstack_t *rs)`
+void      rstack_pop(rstack_t *rs);
 
-- `bool      rstack_empty(rstack_t *rs)`:
+// Whether the stack is empty (does not contain a numeric value at the top).
+bool      rstack_empty(rstack_t *rs);
 
-    Whether the stack is empty (does not contain a numeric value at the top).
+// Decrements the stack's reference counter, freeing the orphaned objects
+// recursively. Performs trial deletion to eliminate cyclic garbage.
+void      rstack_delete(rstack_t *rs)
 
-- `void      rstack_delete(rstack_t *rs)`:
-
-    Decrements the stack's reference counter, freeing the orphaned objects
-    recursively. Performs trial deletion to eliminate cyclic garbage.
-
-
-- `result_t  rstack_front(rstack_t *rs)`:
+// Returns the topmost numeric value if such exists. Detects empty cycles and
+// steps over them.
+result_t  rstack_front(rstack_t *rs)
     
-    Returns the topmost numeric value if such exists. Detects empty cycles and
-    steps over them.
+// Writes all the numbers reachable from the top of the stack. Stops upon
+// detecting a cycle.
+int       rstack_write(char const *path, rstack_t *rs)
 
-    
+rstack_t* rstack_read(char const *path)
+```
 
-- `int       rstack_write(char const *path, rstack_t *rs)`:
+## How to run
+### Requirements
+- GCC
+- Make
 
-    Writes all the numbers reachable from the top of the stack. Stops upon
-    detecting a cycle.
+For the tests:
+- Bash
+- Valgrind (optional, only needed for performing memory checks)
 
-- `rstack_t* rstack_read(char const *path)`
+### Compile
+```bash
+make librstack.so
+```
 
-## Test suite
-The test suite was developed externally under
-[rstack_tests](https://github.com/ignacypekala/rstack_tests) to be shared with
-other students.
-
-It has been vendored in under `tests/`. 
-
-Run the tests:
+### Run the tests
 ```bash
 cd tests
 ./test-all.sh
@@ -60,8 +62,8 @@ Mechanics of University of Warsaw).
 
 All of the code, apart from:
 
-- files provided in the assignment located: `file_four.in` and file located under `provided/`,
+- files provided in the assignment, namely: `file_four.in` and files located under `provided/`,
 
-- files outlined in `tests/README.md` as vendored
+- files outlined in `tests/README.md` as vendored-in
 
-is my original work.
+is my original work and is available under the [MIT](./LICENSE) license.
