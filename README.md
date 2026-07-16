@@ -117,8 +117,8 @@ made it the most demanding C project I've tackled to date.
        search of externally-referenced, alive elements (RC > 0). Upon finding
        such an element, a rescue mission is performed.
     
-       2a. A rescued element is marked as **RESCUED** and all the elements in its
-           sub-graph have their RCs incremented by a nested BFS traversal.
+       - The rescue mission traverses over the found element's sub-graph
+         incrementing RCs and changing the states to **RESCUED**.
 
     3. Next, rescued elements are resurrected by resetting their states to
        **NORMAL**, while the remaining unrescued elements are marked as
