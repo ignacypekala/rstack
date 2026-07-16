@@ -55,6 +55,11 @@ cd tests
 ./test-all.sh
 ```
 
+## Test suite
+The test suite was developed externally under
+[rstack_tests](https://github.com/ignacypekala/rstack_tests) to be shared with
+other students. It has therefore been vendored in under `tests/`. 
+
 ## Attribution
 The project was originally developed for AKSO (Computer Architecture and
 Operating Systems) course at MIMUW (Faculty of Mathematics, Informatics and
