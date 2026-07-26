@@ -1,0 +1,2 @@
+# Mark this batch as generated to disclude it from language statistics
+tests_6_michal_bak/** linguist-generated
