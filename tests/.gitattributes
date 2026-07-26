@@ -1,2 +1,4 @@
-# Mark all tests as vendored to avoid skewing language stats
 tests_*/** linguist-vendored
+memory_tests.c linguist-vendored
+memory_tests.h linguist-vendored
+rstack.h linguist-vendored
