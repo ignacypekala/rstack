@@ -155,10 +155,13 @@ The project was originally developed for AKSO (Computer Architecture and
 Operating Systems) course at MIMUW (Faculty of Mathematics, Informatics and
 Mechanics of University of Warsaw).
 
-All of the code, apart from:
+All of the code with the exceptions listed below is my original work and is
+available under the [MIT](./LICENSE) license.
+
+The following files are included for demonstration purposes and the rights
+belong to their authors:
 
 - files provided in the assignment, namely: `file_four.in` and files located under `provided/`,
 
-- files outlined in `tests/README.md` as vendored-in
+- files outlined as such in `tests/README.md`
 
-is my original work and is available under the [MIT](./LICENSE) license.
