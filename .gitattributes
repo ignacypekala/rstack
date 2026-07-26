@@ -1,0 +1,2 @@
+# Mark all tests as vendored to avoid skewing language stats
+tests_*/** linguist-vendored
