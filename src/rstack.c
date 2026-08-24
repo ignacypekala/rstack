@@ -246,7 +246,7 @@ int rstack_write(char const *path, rstack_t *rs) {
     int result = rstack_write_helper(file, rs);
     // Fclose may overwrite errno.
     int temp_errno = errno;
-    fclose(file);
+    if (fclose(file) == EOF) return -1;
     errno = temp_errno;
 
     return (result == -1) ? -1 : 0;
