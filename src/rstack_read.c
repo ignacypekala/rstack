@@ -138,6 +138,7 @@ rstack_t *rstack_read(char const *path) {
     }
 
     rstack_t *stack = rstack_new();
+    if (stack == nullptr) { fclose(file); return nullptr; }
     uint64_t number = 0;
     int code;
     while (!feof(file) && (code = rstack_read_number(file, &number)) == 0) {
